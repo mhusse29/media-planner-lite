@@ -279,8 +279,7 @@ function App() {
           <AllocationCard
             selected={selectedPlatforms as unknown as string[]}
             names={Object.fromEntries((['FACEBOOK','INSTAGRAM','GOOGLE_SEARCH','GOOGLE_DISPLAY','YOUTUBE','TIKTOK','LINKEDIN'] as const).map(p=>[p, PLATFORM_LABELS[p as Platform]])) as any}
-            mode={mode} setMode={setMode}
-            includeAll={includeAll} setIncludeAll={setIncludeAll}
+            mode={mode}
             pctMap={selectedPlatforms.reduce((acc, p)=>{ acc[p]= Math.max(0, platformWeights[p]??0); return acc; }, {} as Record<string,number>)}
             setPctMap={(next)=>{
               const updated = { ...platformWeights } as Record<Platform, number>;

@@ -1,5 +1,6 @@
 import type { Platform, Goal, Market, Currency } from '../lib/assumptions';
 import { PLATFORM_LABELS } from '../lib/utils';
+import SplitControls from './SplitControls';
 
 type Props = {
   totalBudget: number;
@@ -161,50 +162,17 @@ export default function MediaPlannerCard(p: Props){
         <div className="mp-chips">
           {p.platforms.map(platformChip)}
         </div>
-        <div className="mp-meta">
-          <span><i className="mp-dot"></i>Mode: {p.mode === "manual" ? "Manual split" : "Auto split"}</span>
-          <span><i className="mp-dot"></i>Include all: {p.includeAll ? "On" : "Off"}</span>
-          <span><i className="mp-dot"></i>Platforms: {p.selectedPlatforms.length}</span>
-        </div>
       </div>
 
-      {/* Controls row */}
-      <div className="mp-grid" style={{marginTop:"16px"}}>
-        <div className="mp-col-6">
-          <div className="mp-label">Split Mode</div>
-          <div className="mp-seg" role="tablist" aria-label="Budget split mode">
-            <button
-              className={p.mode === "auto" ? "is-active" : ""}
-              onClick={() => p.onModeChange("auto")}
-              role="tab"
-              aria-selected={p.mode === "auto"}
-            >Auto</button>
-            <button
-              className={p.mode === "manual" ? "is-active" : ""}
-              onClick={() => p.onModeChange("manual")}
-              role="tab"
-              aria-selected={p.mode === "manual"}
-            >Manual</button>
-          </div>
-          <div className="mp-hint" style={{marginTop:"6px"}}>
-            Auto uses our model to weight platforms. Manual lets you set exact % per platform.
-          </div>
-        </div>
-
-        <div className="mp-col-6">
-          <div className="mp-label">Include all platforms</div>
-          <label className="mp-switch">
-            <input
-              type="checkbox"
-              role="switch"
-              aria-checked={p.includeAll}
-              checked={p.includeAll}
-              onChange={(e) => p.onIncludeAllChange(e.target.checked)}
-            />
-            <span className="track"><span className="thumb"/></span>
-          </label>
-          <div className="mp-hint">Guarantee ≥10% to every selected platform in auto split.</div>
-        </div>
+      {/* Split Controls */}
+      <div style={{marginTop:"16px"}}>
+        <SplitControls
+          splitMode={p.mode}
+          setSplitMode={p.onModeChange}
+          includeAll={p.includeAll}
+          setIncludeAll={p.onIncludeAllChange}
+          platformCount={p.selectedPlatforms.length}
+        />
       </div>
     </section>
   );
