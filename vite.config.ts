@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/media-planner-lite/', // Replace with your repository name
+  base: '/', // Temporarily set to root for development
   test: {
     globals: true,
     environment: 'jsdom',

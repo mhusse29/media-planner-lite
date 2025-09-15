@@ -1,6 +1,6 @@
 import type { Platform, Goal, Market, Currency } from '../lib/assumptions';
 import { PLATFORM_LABELS } from '../lib/utils';
-import SplitControls from './SplitControls';
+import SplitControlsRow from './SplitControlsRow';
 
 type Props = {
   totalBudget: number;
@@ -164,16 +164,13 @@ export default function MediaPlannerCard(p: Props){
         </div>
       </div>
 
-      {/* Split Controls */}
-      <div style={{marginTop:"16px"}}>
-        <SplitControls
-          splitMode={p.mode}
-          setSplitMode={p.onModeChange}
-          includeAll={p.includeAll}
-          setIncludeAll={p.onIncludeAllChange}
-          platformCount={p.selectedPlatforms.length}
-        />
-      </div>
+      {/* Split Controls Row */}
+      <SplitControlsRow
+        mode={p.mode}
+        includeAll={p.includeAll}
+        platformCount={p.selectedPlatforms.length}
+        onChangeMode={p.onModeChange}
+      />
     </section>
   );
 }

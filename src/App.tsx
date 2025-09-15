@@ -11,7 +11,10 @@ import { saveState, loadState } from './lib/storage';
 import { Download, CheckCircle2 } from 'lucide-react';
 import { PLATFORM_LABELS, formatNumber, formatCurrency } from './lib/utils';
 import { BudgetDonutPro, ImpressionsBarsPro } from './components/ChartsPro';
-import { ResultsTable } from './components/ResultsTable';
+import ResultsByPlatformCard from './components/ResultsByPlatformCard';
+import ColumnsDialog from './components/ColumnsDialog';
+import type { ColumnDef } from './components/ColumnsDialog';
+import RecommendationsCard from './components/RecommendationsCard';
 import { fmt } from './utils/format';
 import { deriveDisplayWeights } from './utils/split';
 import { AllocationCard } from './components/AllocationCard';
@@ -36,6 +39,20 @@ function App() {
   const [platformCPLs, setPlatformCPLs] = useState<Record<Platform, number>>({} as any);
   const [mode, setMode] = useState<'auto'|'manual'>(manualSplit ? 'manual' : 'auto');
   const [showFx, setShowFx] = useState(false);
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [cols, setCols] = useState<ColumnDef[]>([
+    { key:"budget", label:"Budget", visible:true },
+    { key:"impr", label:"Impr.", visible:true },
+    { key:"reach", label:"Reach", visible:true },
+    { key:"clicks", label:"Clicks", visible:true },
+    { key:"leads", label:"Leads", visible:true },
+    { key:"cpl", label:"CPL", visible:true },
+    { key:"views", label:"Views", visible:true },
+    { key:"eng", label:"Eng.", visible:true },
+    { key:"ctr", label:"CTR", visible:true },
+    { key:"cpc", label:"CPC", visible:true },
+    { key:"cpm", label:"CPM", visible:true },
+  ]);
 
   // Load saved state on mount
   useEffect(() => {
@@ -151,13 +168,34 @@ function App() {
 
   // Prepare data for charts and table
   const rowsFmt = results.map(r => ({
-    ...r,
+    platform: r.platform,
     name: PLATFORM_LABELS[r.platform] || r.platform,
+    budget: `${fmt(r.budget, 0)} ${currency}`,
+    impr: fmt(r.impressions, 0),
+    reach: fmt(r.reach, 0),
+    clicks: fmt(r.clicks, 0),
+    leads: fmt(r.leads, 0),
+    cpl: fmt(r.cpl, 2),
+    views: r.views ? fmt(r.views, 0) : "—",
+    eng: r.engagements ? fmt(r.engagements, 0) : "—",
+    ctr: `${fmt(r.ctr * 100, 2)}%`,
+    cpc: fmt(r.cpc, 2),
+    cpm: fmt(r.cpm, 2),
   }));
 
   const totalsFmt = {
-    ...totals,
-    CPL_total: totals.cpl ?? 0,
+    budget: `${fmt(totals.budget, 0)} ${currency}`,
+    impr: fmt(totals.impressions, 0),
+    reach: fmt(totals.reach, 0),
+    clicks: fmt(totals.clicks, 0),
+    leads: fmt(totals.leads, 0),
+    cpl: fmt(totals.cpl, 2),
+    views: totals.views ? fmt(totals.views, 0) : "—",
+    eng: totals.engagements ? fmt(totals.engagements, 0) : "—",
+    ctr: "—",
+    cpc: "—",
+    cpm: "—",
+    roas: totals.roas ? `${fmt(totals.roas, 2)}x` : "—",
   };
 
   // Charts data (Budget Split)
@@ -264,7 +302,7 @@ function App() {
           {/* FX Warning */}
           {!fxOk && (
             <div className="rowCard warn" style={{marginTop:8}}>
-              <div>
+      <div>
                 <div className="title">FX rate missing for {currency}.</div>
                 <div className="sub">We'll assume your CPM/CPC/CPL are already in {currency}. Set a rate to normalize math.</div>
               </div>
@@ -304,17 +342,31 @@ function App() {
           <KpiCards totals={totals} currency={currency} />
         )}
 
-        {/* Results Table */}
+        {/* Results by Platform */}
         {results.length > 0 && (
-          <div className="card p-4">
-            <ResultsTable rows={rowsFmt as any} totals={totalsFmt} currency={currency} totalBudget={totals.budget || 0} />
-          </div>
+          <ResultsByPlatformCard 
+            rows={rowsFmt} 
+            totals={totalsFmt} 
+            showInlineKpis={false}
+            columns={cols}
+            onOpenColumns={() => setColumnsOpen(true)}
+          />
         )}
 
         {/* Recommendations */}
         {results.length > 0 && recommendations.length > 0 && (
-          <RecommendationsCard recommendations={recommendations} />
+          <RecommendationsCard 
+            items={recommendations.map(rec => `${PLATFORM_LABELS[rec.platform]}: ${rec.text}`)}
+          />
         )}
+
+      {/* Columns Dialog */}
+      <ColumnsDialog
+        open={columnsOpen}
+        onClose={() => setColumnsOpen(false)}
+        cols={cols}
+        setCols={setCols}
+      />
       </main>
     </div>
   );
@@ -340,7 +392,7 @@ function KpiCards({ totals, currency }: { totals: any; currency: string }) {
         </div>
         <div className="kpiCell">
           <div className="kpiLabel">📈 ROAS</div>
-          <div className="kpiValue">{totals.roas.toFixed(2)}x</div>
+          <div className="kpiValue">{Number.isFinite(totals?.roas) ? `${totals.roas.toFixed(2)}x` : '—'}</div>
         </div>
       </div>
       </div>
@@ -348,21 +400,5 @@ function KpiCards({ totals, currency }: { totals: any; currency: string }) {
 }
 
 
-// Recommendations Card Component
-function RecommendationsCard({ recommendations }: { recommendations: any[] }) {
-  return (
-    <div className="card p-6">
-      <h3 className="h2 mb-4">RECOMMENDATIONS</h3>
-      <ul className="space-y-2">
-        {recommendations.map((rec, index) => (
-          <li key={index} className="text-sm">
-            <span className="font-medium">{PLATFORM_LABELS[rec.platform]}:</span>{' '}
-            <span className="text-muted">{rec.text}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 export default App;

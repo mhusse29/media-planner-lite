@@ -180,6 +180,7 @@ export function calculateTotals(results: PlatformResult[]) {
     budget: 0,
     impressions: 0,
     clicks: 0,
+    views: 0,
     engagements: 0,
     reach: 0,
     leads: 0,
@@ -191,6 +192,7 @@ export function calculateTotals(results: PlatformResult[]) {
     totals.budget += result.budget;
     totals.impressions += result.impressions;
     totals.clicks += result.clicks;
+    totals.views += result.views || 0;
     totals.engagements += result.engagements;
     totals.reach += result.reach;
     totals.leads += result.leads;
