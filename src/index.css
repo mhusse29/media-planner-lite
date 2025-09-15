@@ -1,7 +1,0 @@
-@import './styles/theme.css';
-@import './styles/charts.css';
-@import './styles/tokens.css';
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
