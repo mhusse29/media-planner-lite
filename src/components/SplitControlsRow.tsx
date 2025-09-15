@@ -2,8 +2,6 @@
 
 type Props = {
   mode: "auto" | "manual";
-  includeAll: boolean;          // only meaningful when mode === "auto"
-  platformCount: number;
   onChangeMode: (m: "auto" | "manual") => void;
 };
 
@@ -15,8 +13,6 @@ const chip = {
 
 export default function SplitControlsRow({
   mode,
-  includeAll,
-  platformCount,
   onChangeMode,
 }: Props) {
   return (
@@ -39,48 +35,9 @@ export default function SplitControlsRow({
           <span>Mode: {mode === "auto" ? "Auto" : "Manual"}</span>
         </span>
 
-        {/* Include all (auto only) */}
-        {mode === "auto" && (
-          <span
-            style={{
-              ...chip.inner,
-              border: "1px solid #27292B",
-              borderRadius: 999,
-              padding: "6px 12px",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 14,
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 999,
-                background: includeAll ? "#10B981" : "#F59E0B",
-              }}
-            />
-            <span>Include all: {includeAll ? "On" : "Off"}</span>
-          </span>
-        )}
+        {/* removed Include-all status pill */}
 
-        {/* Platforms pill */}
-        <span
-          style={{
-            ...chip.inner,
-            border: "1px solid #27292B",
-            borderRadius: 999,
-            padding: "6px 12px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 14,
-          }}
-        >
-          <span style={{ width: 8, height: 8, borderRadius: 999, background: "#94A3B8" }} />
-          <span>Platforms: {platformCount}</span>
-        </span>
+        {/* removed Platforms count pill */}
 
         {/* Segmented control */}
         <div style={{ marginLeft: "auto", ...chip.inner, border: "1px solid #27292B", borderRadius: 12, padding: 4 }}>

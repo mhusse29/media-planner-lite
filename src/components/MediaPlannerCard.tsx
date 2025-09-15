@@ -46,9 +46,7 @@ export default function MediaPlannerCard(p: Props){
     <section className="mp-card">
       <header className="mp-card__header">
         <h3 className="mp-title">Media Planner</h3>
-        <div className="mp-badges">
-          <span className="mp-hint">Platforms: {p.selectedPlatforms.length}</span>
-        </div>
+        {/* removed right badges to tighten header */}
       </header>
 
       {/* Form grid */}
@@ -167,8 +165,6 @@ export default function MediaPlannerCard(p: Props){
       {/* Split Controls Row */}
       <SplitControlsRow
         mode={p.mode}
-        includeAll={p.includeAll}
-        platformCount={p.selectedPlatforms.length}
         onChangeMode={p.onModeChange}
       />
     </section>

@@ -9,7 +9,7 @@ import { generateRecommendations } from './lib/recommendations';
 import type { ExportPayload } from './export';
 import type { AppState } from './lib/storage';
 import { saveState, loadState } from './lib/storage';
-import { Download, CheckCircle2 } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { PLATFORM_LABELS, formatNumber, formatCurrency } from './lib/utils';
 import { BudgetDonutPro, ImpressionsBarsPro } from './components/ChartsPro';
 import ResultsByPlatformCard from './components/ResultsByPlatformCard';
@@ -286,11 +286,7 @@ function App() {
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <h1 className="h1">Media Plan Lite</h1>
-            <div className="flex items-center gap-3">
-              <span className="badge inline-flex items-center gap-1.5">
-                <CheckCircle2 size={12} />
-                Tests Pass
-              </span>
+            <div className="flex items-center gap-2">
               <div style={{ position:'relative' }}>
                 <button
                   onClick={()=> setExportOpen(v=>!v)}
