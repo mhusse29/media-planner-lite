@@ -59,7 +59,7 @@ describe('Media Plan Calculations', () => {
   });
 
   // Test 3: Manual % split honors user inputs and normalizes
-  it('should normalize manual percentage splits that do not sum to 100', () => {
+  it('should normalize manual splits to fractional weights even if inputs total less than 100', () => {
     const platforms: Platform[] = ['FACEBOOK', 'GOOGLE_SEARCH'];
     const manualWeights = {
       FACEBOOK: 30,
@@ -73,7 +73,7 @@ describe('Media Plan Calculations', () => {
       manualWeights as any
     );
 
-    // Should normalize 80% total to 100%
+    // Should convert 80 total input points into fractional weights summing to 1
     expect(weights.FACEBOOK).toBeCloseTo(30 / 80, 5);
     expect(weights.GOOGLE_SEARCH).toBeCloseTo(50 / 80, 5);
     
