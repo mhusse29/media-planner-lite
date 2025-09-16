@@ -91,6 +91,33 @@ describe('Media Plan Calculations', () => {
     expect(total).toBeCloseTo(1, 5);
   });
 
+  it('should ignore weights for deselected platforms when normalizing manual split', () => {
+    const platforms: Platform[] = ['FACEBOOK', 'GOOGLE_SEARCH'];
+    const manualWeights = {
+      FACEBOOK: 20,
+      GOOGLE_SEARCH: 30,
+      INSTAGRAM: 50
+    };
+
+    const weights = calculatePlatformWeights(
+      platforms,
+      'LEADS',
+      true,
+      manualWeights as any
+    );
+
+    const totalSelectedWeight = manualWeights.FACEBOOK + manualWeights.GOOGLE_SEARCH;
+
+    expect(weights.FACEBOOK).toBeCloseTo(manualWeights.FACEBOOK / totalSelectedWeight, 5);
+    expect(weights.GOOGLE_SEARCH).toBeCloseTo(
+      manualWeights.GOOGLE_SEARCH / totalSelectedWeight,
+      5
+    );
+
+    const total = platforms.reduce((sum, platform) => sum + weights[platform], 0);
+    expect(total).toBeCloseTo(1, 5);
+  });
+
   // Test 4: Views present for Facebook, Instagram, YouTube, TikTok, LinkedIn
   it('should calculate views for platforms with VTR', () => {
     const platforms: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
