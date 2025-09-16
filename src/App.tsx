@@ -23,6 +23,12 @@ import { FxManager } from './components/FxManager';
 import { hasRate } from './lib/fx';
 import MediaPlannerCard from './components/MediaPlannerCard';
 
+const sanitizeFilename = (name: string) => {
+  const cleaned = name.trim().replace(/[\\/:*?"<>|]/g, '-');
+  const normalized = cleaned.replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+  return normalized;
+};
+
 function App() {
   // State management (keeping all existing state)
   const [totalBudget, setTotalBudget] = useState(10000);
@@ -164,44 +170,66 @@ function App() {
   const [exportPaper, setExportPaper] = useState<'a4'|'letter'>('a4');
   const [exportName, setExportName] = useState(`media-plan-${new Date().toISOString().slice(0,10)}`);
   const [includeAssumptions, setIncludeAssumptions] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const runExport = async (fmt: 'pdf'|'xlsx'|'csv') => {
-    const payload: ExportPayload = {
-      advertiser: 'Your Organization',
-      taxId: undefined,
-      currency: currency as any,
-      periodLabel: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }),
-      preparedAt: new Date(),
-      statementId: `MPL-${Date.now()}`,
-      totals: { budget: totals.budget, clicks: totals.clicks, leads: totals.leads, roas: totals.roas || 0 },
-      rows: results.map(r => ({
-        platform: PLATFORM_LABELS[r.platform] || r.platform,
-        budget: r.budget,
-        impressions: r.impressions,
-        reach: r.reach,
-        clicks: r.clicks,
-        leads: r.leads,
-        cpl: r.cpl ?? null,
-        views: r.views ?? null,
-        eng: r.engagements ?? null,
-        ctr: r.ctr ?? null,
-        cpc: r.cpc ?? null,
-        cpm: r.cpm ?? null,
-        sales: r.sales ?? null,
-        cac: r.cac ?? null,
-        revenue: r.revenue ?? null,
-      })),
-      assumptions: includeAssumptions ? { market, goal, niche, currency } : undefined,
-    };
-    let blob: Blob;
-    if (fmt === 'pdf') blob = await (await import('./export/pdf')).exportPDF(payload);
-    else if (fmt === 'xlsx') blob = await (await import('./export/xlsx')).exportXLSX(payload);
-    else blob = await (await import('./export/csv')).exportCSV(payload);
-    const ext = fmt === 'pdf' ? 'pdf' : (fmt === 'xlsx' ? 'xlsx' : 'csv');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${exportName}.${ext}`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setExportOpen(false);
+    if (isExporting) return;
+    setIsExporting(true);
+    let objectUrl: string | undefined;
+    try {
+      const payload: ExportPayload = {
+        advertiser: 'Your Organization',
+        taxId: undefined,
+        currency: currency as any,
+        periodLabel: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }),
+        preparedAt: new Date(),
+        statementId: `MPL-${Date.now()}`,
+        totals: { budget: totals.budget, clicks: totals.clicks, leads: totals.leads, roas: totals.roas || 0 },
+        rows: results.map(r => ({
+          platform: PLATFORM_LABELS[r.platform] || r.platform,
+          budget: r.budget,
+          impressions: r.impressions,
+          reach: r.reach,
+          clicks: r.clicks,
+          leads: r.leads,
+          cpl: r.cpl ?? null,
+          views: r.views ?? null,
+          eng: r.engagements ?? null,
+          ctr: r.ctr ?? null,
+          cpc: r.cpc ?? null,
+          cpm: r.cpm ?? null,
+          sales: r.sales ?? null,
+          cac: r.cac ?? null,
+          revenue: r.revenue ?? null,
+        })),
+        assumptions: includeAssumptions ? { market, goal, niche, currency } : undefined,
+      };
+      let blob: Blob;
+      if (fmt === 'pdf') blob = await (await import('./export/pdf')).exportPDF(payload);
+      else if (fmt === 'xlsx') blob = await (await import('./export/xlsx')).exportXLSX(payload);
+      else blob = await (await import('./export/csv')).exportCSV(payload);
+      const ext = fmt === 'pdf' ? 'pdf' : (fmt === 'xlsx' ? 'xlsx' : 'csv');
+      const safeName = sanitizeFilename(exportName) || `media-plan-${new Date().toISOString().slice(0,10)}`;
+      const link = typeof document !== 'undefined' ? document.createElement('a') : null;
+      if (!link) return;
+      objectUrl = URL.createObjectURL(blob);
+      link.href = objectUrl;
+      link.download = `${safeName}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Failed to export', err);
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('Sorry, something went wrong while exporting. Please try again.');
+      }
+    } finally {
+      if (objectUrl) {
+        const url = objectUrl;
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      setExportOpen(false);
+      setIsExporting(false);
+    }
   };
 
   const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GOOGLE_DISPLAY', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
@@ -290,13 +318,14 @@ function App() {
               <div style={{ position:'relative' }}>
                 <button
                   onClick={()=> setExportOpen(v=>!v)}
-                  disabled={results.length === 0}
+                  disabled={results.length === 0 || isExporting}
                   className="btn primary"
                   aria-haspopup="menu"
                   aria-expanded={exportOpen}
+                  aria-busy={isExporting}
                 >
                   <Download size={14} />
-                  Export
+                  {isExporting ? 'Exporting…' : 'Export'}
                 </button>
                 {exportOpen && (
                   <div role="dialog" aria-modal="true" style={{ position:'absolute', right:0, marginTop:8, background:'#16171A', border:'1px solid var(--border)', borderRadius:12, padding:12, minWidth:260, zIndex:30 }}>
@@ -317,9 +346,15 @@ function App() {
                         <input type="checkbox" checked={includeAssumptions} onChange={e=>setIncludeAssumptions(e.target.checked)} />
                       </label>
                       <div style={{ display:'grid', gap:6 }}>
-                        <button className="secBtn" onClick={()=>runExport('pdf')}>Export PDF</button>
-                        <button className="secBtn" onClick={()=>runExport('xlsx')}>Export XLSX</button>
-                        <button className="secBtn" onClick={()=>runExport('csv')}>Export CSV</button>
+                        <button className="secBtn" onClick={()=>runExport('pdf')} disabled={isExporting}>
+                          {isExporting ? 'Exporting…' : 'Export PDF'}
+                        </button>
+                        <button className="secBtn" onClick={()=>runExport('xlsx')} disabled={isExporting}>
+                          {isExporting ? 'Exporting…' : 'Export XLSX'}
+                        </button>
+                        <button className="secBtn" onClick={()=>runExport('csv')} disabled={isExporting}>
+                          {isExporting ? 'Exporting…' : 'Export CSV'}
+                        </button>
                       </div>
                     </div>
                   </div>
