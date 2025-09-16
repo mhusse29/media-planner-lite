@@ -9,7 +9,7 @@ import { generateRecommendations } from './lib/recommendations';
 import type { ExportPayload } from './export';
 import type { AppState } from './lib/storage';
 import { saveState, loadState } from './lib/storage';
-import { Download } from 'lucide-react';
+import { Download, Settings } from 'lucide-react';
 import { PLATFORM_LABELS, formatNumber, formatCurrency } from './lib/utils';
 import { BudgetDonutPro, ImpressionsBarsPro } from './components/ChartsPro';
 import ResultsByPlatformCard from './components/ResultsByPlatformCard';
@@ -19,9 +19,15 @@ import RecommendationsCard from './components/RecommendationsCard';
 import { fmt } from './utils/format';
 import { deriveDisplayWeights } from './utils/split';
 import { AllocationCard } from './components/AllocationCard';
+import { CostOverridesCard } from './components/CostOverridesCard';
 import { FxManager } from './components/FxManager';
 import { hasRate } from './lib/fx';
 import MediaPlannerCard from './components/MediaPlannerCard';
+
+const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GOOGLE_DISPLAY', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
+const PLATFORM_NAME_MAP: Record<string, string> = Object.fromEntries(
+  ALL_PLATFORMS.map((platform) => [platform, PLATFORM_LABELS[platform] || platform])
+);
 
 const sanitizeFilename = (name: string) => {
   const cleaned = name.trim().replace(/[\\/:*?"<>|]/g, '-');
@@ -163,6 +169,15 @@ function App() {
 
   const totals = useMemo(() => calculateTotals(results), [results]);
   const recommendations = useMemo(() => generateRecommendations(results), [results]);
+  const platformNames = useMemo(() => {
+    const map: Record<string, string> = { ...PLATFORM_NAME_MAP };
+    selectedPlatforms.forEach((platform) => {
+      if (!map[platform]) {
+        map[platform] = PLATFORM_LABELS[platform] || platform;
+      }
+    });
+    return map;
+  }, [selectedPlatforms]);
 
   // Export CSV
   // Professional export menu
@@ -232,7 +247,6 @@ function App() {
     }
   };
 
-  const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GOOGLE_DISPLAY', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
   const fxOk = hasRate(currency as any);
 
   // Prepare data for charts and table
@@ -315,6 +329,15 @@ function App() {
           <div className="flex items-center justify-between">
             <h1 className="h1">Media Plan Lite</h1>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowFx(true)}
+                className="btn"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                title="Review or update exchange rates"
+              >
+                <Settings size={14} />
+                <span>Manage FX</span>
+              </button>
               <div style={{ position:'relative' }}>
                 <button
                   onClick={()=> setExportOpen(v=>!v)}
@@ -418,7 +441,7 @@ function App() {
           {/* Platform Allocation Card */}
           <AllocationCard
             selected={selectedPlatforms as unknown as string[]}
-            names={Object.fromEntries((['FACEBOOK','INSTAGRAM','GOOGLE_SEARCH','GOOGLE_DISPLAY','YOUTUBE','TIKTOK','LINKEDIN'] as const).map(p=>[p, PLATFORM_LABELS[p as Platform]])) as any}
+            names={platformNames}
             mode={mode}
             pctMap={selectedPlatforms.reduce((acc, p)=>{ acc[p]= Math.max(0, platformWeights[p]??0); return acc; }, {} as Record<string,number>)}
             setPctMap={(next)=>{
@@ -426,6 +449,15 @@ function App() {
               (Object.keys(next) as string[]).forEach(k=>{ updated[k as Platform] = Math.max(0, Number((next as any)[k])||0); });
               setPlatformWeights(updated);
             }}
+          />
+          <CostOverridesCard
+            selected={selectedPlatforms as unknown as string[]}
+            names={platformNames}
+            currency={currency}
+            manualCpl={manualCPL}
+            setManualCpl={setManualCPL}
+            cplMap={platformCPLs as unknown as Record<string, number>}
+            setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
           />
 
           {/* Charts Panel */}

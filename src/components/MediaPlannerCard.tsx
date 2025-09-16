@@ -159,7 +159,9 @@ export default function MediaPlannerCard(p: Props){
       {/* Split Controls Row */}
       <SplitControlsRow
         mode={p.mode}
+        includeAll={p.includeAll}
         onChangeMode={p.onModeChange}
+        onIncludeAllChange={p.onIncludeAllChange}
       />
     </section>
   );
