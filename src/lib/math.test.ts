@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { calculateResults, calculatePlatformWeights, calculateTotals } from './math';
 import type { Platform } from './assumptions';
 
@@ -170,6 +170,31 @@ describe('Media Plan Calculations', () => {
     const fbResult = results[0];
     expect(fbResult.leads).toBeCloseTo(fbResult.budget / manualCPL, 1);
     expect(fbResult.cpl).toBeCloseTo(manualCPL, 1);
+  });
+
+  it('should skip platforms that do not have assumptions', () => {
+    const totalBudget = 5000;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const results = calculateResults({
+        totalBudget,
+        selectedPlatforms: ['FACEBOOK', 'UNKNOWN' as Platform],
+        goal: 'LEADS',
+        market: 'Egypt',
+        leadToSalePercent: 20,
+        revenuePerSale: 800,
+        manualSplit: false,
+        includeAll: false,
+        manualCPL: false,
+      });
+
+      const platforms = results.map(r => r.platform as unknown as string);
+      expect(platforms).not.toContain('UNKNOWN');
+      const allocated = results.reduce((sum, item) => sum + item.budget, 0);
+      expect(allocated).toBeCloseTo(totalBudget, 5);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
 

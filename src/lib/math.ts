@@ -1,4 +1,4 @@
-import type { Platform, Market, Goal } from './assumptions';
+import type { Platform, Market, Goal, ChannelAssumptions } from './assumptions';
 import { CHANNEL_ASSUMPTIONS, MARKET_UPLIFT, FREQUENCY } from './assumptions';
 import { GOAL_WEIGHTS } from './weights';
 
@@ -126,8 +126,18 @@ export function calculateResults(inputs: CalculationInputs): PlatformResult[] {
     platformCPLs
   } = inputs;
 
+  const assumptionMap = CHANNEL_ASSUMPTIONS as Record<string, ChannelAssumptions>;
+
+  const validPlatforms = selectedPlatforms.filter((platform) => {
+    const hasAssumptions = !!assumptionMap[platform];
+    if (!hasAssumptions) {
+      console.warn(`Skipping unknown platform "${platform}" during calculation.`);
+    }
+    return hasAssumptions;
+  });
+
   const weights = calculatePlatformWeights(
-    selectedPlatforms,
+    validPlatforms,
     goal,
     manualSplit,
     platformWeights,
@@ -137,8 +147,9 @@ export function calculateResults(inputs: CalculationInputs): PlatformResult[] {
   const results: PlatformResult[] = [];
   const marketUplift = market === 'Egypt' ? 1 : MARKET_UPLIFT;
 
-  for (const platform of selectedPlatforms) {
-    const assumptions = CHANNEL_ASSUMPTIONS[platform];
+  for (const platform of validPlatforms) {
+    const assumptions = assumptionMap[platform];
+    if (!assumptions) continue;
     const weight = weights[platform] || 0;
     const budget = totalBudget * weight;
 
