@@ -8,24 +8,59 @@ import {
   saveRates,
   saveTs,
   type LiveFxProvider,
-  type Rates
+  type Rates,
 } from './fx';
 
 const TTL = 6 * 60 * 60 * 1000;
 const START_TIME = new Date('2024-01-01T00:00:00.000Z');
 
+const createLocalStorageMock = () => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => (key in store ? store[key] : null),
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+    get length() {
+      return Object.keys(store).length;
+    },
+  } as Storage;
+};
+
 describe('refreshRates', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(START_TIME);
-    localStorage.clear();
+    vi.stubGlobal('localStorage', createLocalStorageMock());
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    localStorage.clear();
+  });
+
+  it('merges live SAR rates while retaining existing values', async () => {
+    const seeded: Rates = { ...DEFAULT_RATES, EGP: 50, SAR: 3.6 };
+    saveRates(seeded);
+
+    const provider = vi.fn().mockResolvedValue({ SAR: 3.71 });
+    const merged = await refreshRates(provider, 0); // ttl=0 -> always refresh
+
+    expect(provider).toHaveBeenCalledTimes(1);
+    expect(merged.SAR).toBe(3.71);
+    expect(merged.EGP).toBe(50);
+
+    const persisted = loadRates();
+    expect(persisted.SAR).toBe(3.71);
+    expect(persisted.EGP).toBe(50);
   });
 
   it('merges live rates with stored rates, updates timestamp, and skips provider within TTL', async () => {
@@ -38,20 +73,24 @@ describe('refreshRates', () => {
       SER: 42,
     };
     saveRates(stored);
+
     const staleStamp = Date.now() - TTL - 1;
     saveTs(staleStamp);
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        rates: {
-          EGP: 31.1,
-          AED: 3.6123,
-          SAR: 3.76,
-          EUR: 0.95,
-        },
-      }),
-    });
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          rates: {
+            EGP: 31.1,
+            AED: 3.6123,
+            SAR: 3.76,
+            EUR: 0.95,
+          },
+        }),
+      } as unknown as Response);
+
     vi.stubGlobal('fetch', fetchMock);
 
     const merged = await refreshRates(hostProvider, TTL);
@@ -68,10 +107,11 @@ describe('refreshRates', () => {
     expect(merged.SER).toBe(42);
     expect(loadRates()).toEqual(merged);
 
-    const currentTime = Date.now();
-    expect(loadTs()).toBe(currentTime);
+    const now = Date.now();
+    expect(loadTs()).toBe(now);
 
-    vi.setSystemTime(currentTime + TTL / 2);
+    vi.setSystemTime(now + TTL / 2);
+
     const cached = await refreshRates(hostProvider, TTL);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(cached).toEqual(merged);
@@ -85,10 +125,13 @@ describe('refreshRates', () => {
       SER: 12,
     };
     saveRates(stored);
+
     const previousTs = Date.now() - TTL - 1;
     saveTs(previousTs);
 
-    const failingProvider: LiveFxProvider = vi.fn(() => Promise.reject(new Error('failed')));
+    const failingProvider: LiveFxProvider = vi.fn(() =>
+      Promise.reject(new Error('failed')),
+    );
 
     const result = await refreshRates(failingProvider, TTL);
 
