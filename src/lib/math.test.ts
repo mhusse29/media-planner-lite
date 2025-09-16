@@ -42,6 +42,22 @@ describe('Media Plan Calculations', () => {
     expect(Math.abs(total - 1)).toBeLessThan(0.001);
   });
 
+  it('should distribute equally when calculated weights sum to zero', () => {
+    const platforms: Platform[] = ['YOUTUBE'];
+    const weights = calculatePlatformWeights(
+      platforms,
+      'LEADS',
+      false,
+      undefined,
+      false
+    );
+
+    expect(weights.YOUTUBE).toBe(1);
+
+    const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+    expect(Math.abs(total - 1)).toBeLessThan(0.001);
+  });
+
   // Test 3: Manual % split honors user inputs and normalizes
   it('should normalize manual percentage splits that do not sum to 100', () => {
     const platforms: Platform[] = ['FACEBOOK', 'GOOGLE_SEARCH'];
@@ -62,6 +78,27 @@ describe('Media Plan Calculations', () => {
     expect(weights.GOOGLE_SEARCH).toBeCloseTo(50 / 80, 5);
     
     const total = weights.FACEBOOK + weights.GOOGLE_SEARCH;
+    expect(Math.abs(total - 1)).toBeLessThan(0.001);
+  });
+
+  it('should distribute manual weights equally when total is non-positive', () => {
+    const platforms: Platform[] = ['FACEBOOK', 'INSTAGRAM'];
+    const manualWeights = {
+      FACEBOOK: 0,
+      INSTAGRAM: 0
+    } as Record<Platform, number>;
+
+    const weights = calculatePlatformWeights(
+      platforms,
+      'LEADS',
+      true,
+      manualWeights
+    );
+
+    expect(weights.FACEBOOK).toBeCloseTo(0.5, 5);
+    expect(weights.INSTAGRAM).toBeCloseTo(0.5, 5);
+
+    const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
     expect(Math.abs(total - 1)).toBeLessThan(0.001);
   });
 
