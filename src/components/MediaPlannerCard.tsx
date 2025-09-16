@@ -75,15 +75,9 @@ export default function MediaPlannerCard(p: Props){
             <option value="EGP">EGP</option>
             <option value="USD">USD</option>
             <option value="AED">AED</option>
-            <option value="SER">SER</option>
             <option value="SAR">SAR</option>
             <option value="EUR">EUR</option>
           </select>
-          {p.currency === 'SER' && (
-            <div className="mp-hint" style={{color:'#F5B971'}}>
-              Using SER→SAR unless FX set
-            </div>
-          )}
         </div>
 
         <div className="mp-field mp-col-6">

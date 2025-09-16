@@ -1,19 +1,15 @@
 // src/lib/fx.ts
-export type Cur = 'USD'|'EGP'|'AED'|'SAR'|'SER'|'EUR';
+export type Cur = 'USD'|'EGP'|'AED'|'SAR'|'EUR';
 export type Rates = Record<Cur, number | null>;
 
 const KEY = 'mpl_fx_usd_per_v2';       // units per 1 USD
 const KEY_TS = 'mpl_fx_usd_per_ts_v2'; // cache timestamp (ms)
-
-// SER isn't an ISO code. Treat as SAR unless explicitly set.
-export const alias = (c: Cur): Cur => (c === 'SER' ? 'SAR' : c);
 
 // Default: pegs where sensible, null where you should decide.
 export const DEFAULT_RATES: Rates = {
   USD: 1,
   AED: 3.6725,        // market peg
   SAR: 3.75,          // market peg
-  SER: null,          // set if you really mean a different currency; alias->SAR in calc
   EGP: null,          // you set
   EUR: null,          // you set/fetch
 };
@@ -33,11 +29,11 @@ export function applyPegs(current: Rates): Rates {
 
 // --- Converters (math runs in USD) ---
 export function toUSD(amount: number, cur: Cur, r = loadRates()): number {
-  const code = alias(cur); const rate = r[code];
+  const rate = r[cur];
   return rate ? amount / rate : amount; // if missing, treat as already-USD
 }
 export function fromUSD(usd: number, cur: Cur, r = loadRates()): number {
-  const code = alias(cur); const rate = r[code];
+  const rate = r[cur];
   return rate ? usd * rate : usd;
 }
 
@@ -73,6 +69,5 @@ export async function refreshRates(provider: LiveFxProvider, ttlMs = 6*60*60*100
 
 // Simple guard: do we have a rate defined for the selected currency?
 export function hasRate(cur: Cur, usd_per = loadRates()): boolean {
-  const code = alias(cur);
-  return !!usd_per[code];
+  return !!usd_per[cur];
 }
