@@ -9,7 +9,7 @@ export type Platform =
 
 export type Goal = 'LEADS' | 'TRAFFIC' | 'AWARENESS';
 export type Market = 'Egypt' | 'Saudi Arabia' | 'UAE' | 'Europe';
-export type Currency = 'EGP' | 'USD' | 'AED' | 'SAR' | 'SER' | 'EUR';
+export type Currency = 'EGP' | 'USD' | 'AED' | 'SAR' | 'EUR';
 
 export interface ChannelAssumptions {
   CPM?: number;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { loadRates, saveRates, applyPegs, refreshRates, hostProvider, type Cur, type Rates } from '../lib/fx';
 
-const CURS: Cur[] = ['USD','EGP','AED','SAR','SER','EUR'];
+const CURS: Cur[] = ['USD','EGP','AED','SAR','EUR'];
 
 export function FxManager({ onClose }:{ current?: Cur; onClose:()=>void }){
   const [rates, setRates] = useState<Rates>(loadRates());
