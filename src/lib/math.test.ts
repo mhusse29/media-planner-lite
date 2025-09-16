@@ -49,7 +49,7 @@ describe('Media Plan Calculations', () => {
       FACEBOOK: 30,
       GOOGLE_SEARCH: 50
     };
-    
+
     const weights = calculatePlatformWeights(
       platforms,
       'LEADS',
@@ -60,9 +60,35 @@ describe('Media Plan Calculations', () => {
     // Should normalize 80% total to 100%
     expect(weights.FACEBOOK).toBeCloseTo(30 / 80, 5);
     expect(weights.GOOGLE_SEARCH).toBeCloseTo(50 / 80, 5);
-    
+
     const total = weights.FACEBOOK + weights.GOOGLE_SEARCH;
     expect(Math.abs(total - 1)).toBeLessThan(0.001);
+  });
+
+  it('should fallback to equal split when manual weights sum to zero', () => {
+    const platforms: Platform[] = ['FACEBOOK', 'GOOGLE_SEARCH', 'INSTAGRAM'];
+    const manualWeights = {
+      FACEBOOK: 0,
+      GOOGLE_SEARCH: 0,
+      INSTAGRAM: 0
+    };
+
+    const weights = calculatePlatformWeights(
+      platforms,
+      'LEADS',
+      true,
+      manualWeights as any
+    );
+
+    const expectedWeight = 1 / platforms.length;
+
+    platforms.forEach(platform => {
+      expect(Number.isFinite(weights[platform])).toBe(true);
+      expect(weights[platform]).toBeCloseTo(expectedWeight, 5);
+    });
+
+    const total = platforms.reduce((sum, platform) => sum + weights[platform], 0);
+    expect(total).toBeCloseTo(1, 5);
   });
 
   // Test 4: Views present for Facebook, Instagram, YouTube, TikTok, LinkedIn

@@ -46,11 +46,19 @@ export function calculatePlatformWeights(
     // Normalize manual weights to sum to 100%
     const total = Object.values(manualWeights).reduce((sum, w) => sum + w, 0);
     const normalized: Record<Platform, number> = {} as any;
-    
-    for (const platform of selectedPlatforms) {
-      normalized[platform] = (manualWeights[platform] || 0) / total;
+
+    if (total > 0) {
+      for (const platform of selectedPlatforms) {
+        normalized[platform] = (manualWeights[platform] || 0) / total;
+      }
+    } else {
+      const equalWeight =
+        selectedPlatforms.length > 0 ? 1 / selectedPlatforms.length : 0;
+      for (const platform of selectedPlatforms) {
+        normalized[platform] = equalWeight;
+      }
     }
-    
+
     return normalized;
   }
 
