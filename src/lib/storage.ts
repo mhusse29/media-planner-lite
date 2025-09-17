@@ -108,19 +108,16 @@ export function loadState(): Partial<AppState> | null {
         next.manualCPL = raw.manualCPL;
       }
 
-      const platforms = sanitizePlatformList(raw.selectedPlatforms as unknown);
-      if (platforms.length > 0) {
-        next.selectedPlatforms = platforms;
+      if ('selectedPlatforms' in raw) {
+        next.selectedPlatforms = sanitizePlatformList(raw.selectedPlatforms as unknown);
       }
 
-      const weights = sanitizeNumberRecord(raw.platformWeights);
-      if (Object.keys(weights).length > 0) {
-        next.platformWeights = weights;
+      if ('platformWeights' in raw) {
+        next.platformWeights = sanitizeNumberRecord(raw.platformWeights);
       }
 
-      const cpls = sanitizeNumberRecord(raw.platformCPLs);
-      if (Object.keys(cpls).length > 0) {
-        next.platformCPLs = cpls;
+      if ('platformCPLs' in raw) {
+        next.platformCPLs = sanitizeNumberRecord(raw.platformCPLs);
       }
 
       return next;

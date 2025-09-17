@@ -71,19 +71,19 @@ function App() {
   useEffect(() => {
     const savedState = loadState();
     if (savedState) {
-      if (savedState.totalBudget) setTotalBudget(savedState.totalBudget);
-      if (savedState.currency) setCurrency(savedState.currency);
-      if (savedState.market) setMarket(savedState.market);
-      if (savedState.goal) setGoal(savedState.goal);
-      if (savedState.niche) setNiche(savedState.niche);
-      if (savedState.leadToSalePercent) setLeadToSalePercent(savedState.leadToSalePercent);
-      if (savedState.revenuePerSale) setRevenuePerSale(savedState.revenuePerSale);
-      if (savedState.selectedPlatforms) setSelectedPlatforms(savedState.selectedPlatforms);
+      if (savedState.totalBudget !== undefined) setTotalBudget(savedState.totalBudget);
+      if (savedState.currency !== undefined) setCurrency(savedState.currency);
+      if (savedState.market !== undefined) setMarket(savedState.market);
+      if (savedState.goal !== undefined) setGoal(savedState.goal);
+      if (savedState.niche !== undefined) setNiche(savedState.niche);
+      if (savedState.leadToSalePercent !== undefined) setLeadToSalePercent(savedState.leadToSalePercent);
+      if (savedState.revenuePerSale !== undefined) setRevenuePerSale(savedState.revenuePerSale);
+      if (savedState.selectedPlatforms !== undefined) setSelectedPlatforms(savedState.selectedPlatforms);
       if (savedState.manualSplit !== undefined) setManualSplit(savedState.manualSplit);
-      if (savedState.platformWeights) setPlatformWeights(savedState.platformWeights);
+      if (savedState.platformWeights !== undefined) setPlatformWeights(savedState.platformWeights);
       if (savedState.includeAll !== undefined) setIncludeAll(savedState.includeAll);
       if (savedState.manualCPL !== undefined) setManualCPL(savedState.manualCPL);
-      if (savedState.platformCPLs) setPlatformCPLs(savedState.platformCPLs);
+      if (savedState.platformCPLs !== undefined) setPlatformCPLs(savedState.platformCPLs);
     }
   }, []);
 
