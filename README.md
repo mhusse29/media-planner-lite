@@ -1,69 +1,61 @@
-# React + TypeScript + Vite
+# Media Planner Lite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Media Planner Lite is a Vite-powered React application that helps marketers turn channel assumptions into a shareable media plan. Provide a total budget, choose the platforms you want to invest in, and compare projected impressions, clicks, leads, revenue, and return on ad spend across channels. The app also includes tooling for currency conversion so teams working in different markets can collaborate with confidence.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📊 **Scenario planning** – calculate expected performance for each supported platform based on configurable goals and assumptions.
+- 🧮 **Automatic totals** – quickly see blended CTR, CPC, CPM, CAC, and ROAS across your selected mix.
+- 💾 **CSV export** – download a ready-to-share media plan that includes platform-level metrics and roll-up totals.
+- 🌍 **FX management** – load, persist, and refresh exchange rates with sensible defaults and caching.
+- 🎨 **Responsive UI** – built with Tailwind CSS for a clean layout that works on both desktop and mobile screens.
 
-## Expanding the ESLint configuration
+## Getting started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# install dependencies
+npm install
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# start the dev server
+npm run dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# run the test suite
+npm test
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open the local development URL shown in the terminal (usually <http://localhost:5173/>) to interact with the planner.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Building for production
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Generate an optimized production bundle with:
+
+```bash
+npm run build
 ```
+
+You can then preview the production build locally:
+
+```bash
+npm run preview
+```
+
+## Project structure
+
+- `src/lib` – core business logic for budgeting, forecasting, CSV export, and FX utilities.
+- `src/components` – React components for user interaction and results visualization.
+- `docs/` – supplementary documentation and design references.
+
+## Tooling
+
+- [Vite](https://vitejs.dev/) for fast development builds.
+- [React](https://react.dev/) with TypeScript for type-safe UI development.
+- [Tailwind CSS](https://tailwindcss.com/) for styling.
+- [Vitest](https://vitest.dev/) for unit testing.
+
+## Contributing
+
+1. Create a branch for your change.
+2. Run the test suite and ensure everything passes.
+3. Open a pull request describing the updates and screenshots for significant UI changes.
+
+We welcome issues and contributions that improve the planning experience!

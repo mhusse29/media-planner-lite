@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_RATES, refreshRates, saveRates, loadRates, type Rates } from './fx';
 
+const KEY_TS = 'mpl_fx_usd_per_ts_v2';
+
 const createLocalStorageMock = () => {
   let store: Record<string, string> = {};
   return {
@@ -37,5 +39,38 @@ describe('refreshRates', () => {
     const persisted = loadRates();
     expect(persisted.SAR).toBe(3.71);
     expect(persisted.EGP).toBe(50);
+  });
+
+  it('skips the provider call when cached rates are still fresh', async () => {
+    const seeded: Rates = { ...DEFAULT_RATES, EUR: 0.9 };
+    saveRates(seeded);
+
+    const ttlMs = 60_000;
+    const now = 1_000_000;
+    localStorage.setItem(KEY_TS, String(now - ttlMs / 2));
+    const provider = vi.fn();
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+
+    const result = await refreshRates(provider, ttlMs);
+
+    expect(provider).not.toHaveBeenCalled();
+    expect(result).toEqual(seeded);
+  });
+
+  it('returns existing rates when the provider rejects', async () => {
+    const seeded: Rates = { ...DEFAULT_RATES, AED: 3.66 };
+    saveRates(seeded);
+
+    const ttlMs = 1;
+    const now = 5_000_000;
+    localStorage.setItem(KEY_TS, String(now - 10));
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+
+    const provider = vi.fn().mockRejectedValue(new Error('network down'));
+    const result = await refreshRates(provider, ttlMs);
+
+    expect(provider).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(seeded);
+    expect(loadRates()).toEqual(seeded);
   });
 });
