@@ -102,6 +102,46 @@ describe('Media Plan Calculations', () => {
     expect(Math.abs(total - 1)).toBeLessThan(0.001);
   });
 
+  it('should fall back to an equal split when selected manual weights sum to zero', () => {
+    const platforms: Platform[] = ['FACEBOOK', 'INSTAGRAM'];
+    const manualWeights = {
+      FACEBOOK: 0,
+      INSTAGRAM: 0,
+      GOOGLE_SEARCH: 100
+    } as Record<Platform, number>;
+
+    const totalBudget = 8000;
+    const results = calculateResults({
+      totalBudget,
+      selectedPlatforms: platforms,
+      goal: 'LEADS',
+      market: 'Egypt',
+      leadToSalePercent: 20,
+      revenuePerSale: 800,
+      manualSplit: true,
+      platformWeights: manualWeights,
+      includeAll: false,
+      manualCPL: false
+    });
+
+    expect(results).toHaveLength(platforms.length);
+
+    results.forEach((result) => {
+      expect(result.weight).toBeGreaterThan(0);
+      expect(Number.isFinite(result.weight)).toBe(true);
+      expect(result.budget).toBeGreaterThan(0);
+      expect(Number.isFinite(result.budget)).toBe(true);
+      expect(Number.isFinite(result.impressions)).toBe(true);
+      expect(Number.isFinite(result.clicks)).toBe(true);
+    });
+
+    const allocated = results.reduce((sum, item) => sum + item.budget, 0);
+    expect(allocated).toBeCloseTo(totalBudget, 5);
+
+    const weightSum = results.reduce((sum, item) => sum + item.weight, 0);
+    expect(weightSum).toBeCloseTo(1, 5);
+  });
+
   // Test 4: Views present for Facebook, Instagram, YouTube, TikTok, LinkedIn
   it('should calculate views for platforms with VTR', () => {
     const platforms: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
