@@ -96,25 +96,21 @@ function App() {
     if (mode === 'manual' && includeAll) setIncludeAll(false);
   }, [mode, includeAll]);
 
-  // Save state on changes
-  useEffect(() => {
-    const state: AppState = {
-      totalBudget,
-      currency,
-      market,
-      goal,
-      niche,
-      leadToSalePercent,
-      revenuePerSale,
-      selectedPlatforms,
-      manualSplit,
-      platformWeights,
-      includeAll,
-      manualCPL,
-      platformCPLs
-    };
-    saveState(state);
-  }, [
+  const persistedState = useMemo<AppState>(() => ({
+    totalBudget,
+    currency,
+    market,
+    goal,
+    niche,
+    leadToSalePercent,
+    revenuePerSale,
+    selectedPlatforms,
+    manualSplit,
+    platformWeights,
+    includeAll,
+    manualCPL,
+    platformCPLs
+  }), [
     totalBudget,
     currency,
     market,
@@ -129,6 +125,14 @@ function App() {
     manualCPL,
     platformCPLs
   ]);
+
+  // Save state on changes (debounced to avoid excessive persistence churn)
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      saveState(persistedState);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [persistedState]);
 
   // Handle niche change
   const handleNicheChange = useCallback((newNiche: string) => {
