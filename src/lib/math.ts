@@ -44,7 +44,10 @@ export function calculatePlatformWeights(
 ): Record<Platform, number> {
   if (manualSplit && manualWeights) {
     // Normalize manual weights to fractional values summing to 1 (100%)
-    const total = Object.values(manualWeights).reduce((sum, w) => sum + w, 0);
+    const manualValues = selectedPlatforms.map(
+      (platform) => Math.max(0, manualWeights[platform] ?? 0)
+    );
+    const total = manualValues.reduce((sum, weight) => sum + weight, 0);
     const normalized: Record<Platform, number> = {} as any;
 
     if (total <= 0) {
@@ -62,9 +65,9 @@ export function calculatePlatformWeights(
       return normalized;
     }
 
-    for (const platform of selectedPlatforms) {
-      normalized[platform] = (manualWeights[platform] || 0) / total;
-    }
+    selectedPlatforms.forEach((platform, index) => {
+      normalized[platform] = manualValues[index] / total;
+    });
 
     return normalized;
   }
