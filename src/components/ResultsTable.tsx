@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { fmt } from '../utils/format';
+import { fmt, isFiniteNumber } from '../utils/format';
 import { ResultsHeader } from '../components/ResultsHeader';
 
 type Row = {
@@ -152,7 +152,7 @@ export function ResultsTable({
                     node = CPM != null ? fmt(CPM,2) : '—';
                   }
                   else if(c.key==='views' || c.key==='engagements' || c.key==='impressions' || c.key==='reach' || c.key==='clicks' || c.key==='leads'){
-                    node = (raw ?? 0) ? fmt(raw,0) : '—';
+                    node = isFiniteNumber(raw) ? fmt(raw,0) : '—';
                   }
                   else if(c.key==='name'){
                     node = <span className="tnum">{r.name}</span>;
@@ -175,8 +175,8 @@ export function ResultsTable({
                 else if(c.key==='clicks') v=fmt(totals.clicks||0,0);
                 else if(c.key==='leads') v=fmt(totals.leads||0,0);
                 else if(c.key==='CPL_eff') v=fmt(totals.CPL_total ?? 0,2);
-                else if(c.key==='views') v= totals.views ? fmt(totals.views,0) : '—';
-                else if(c.key==='engagements') v= totals.engagements ? fmt(totals.engagements,0) : '—';
+                else if(c.key==='views') v= isFiniteNumber(totals.views) ? fmt(totals.views,0) : '—';
+                else if(c.key==='engagements') v= isFiniteNumber(totals.engagements) ? fmt(totals.engagements,0) : '—';
                 return <td key={String(c.key)} className={(c.align??'right')==='left'?'text-left':'text-right'}>{v}</td>;
               })}
             </tr>

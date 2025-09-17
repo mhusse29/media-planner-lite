@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { fmt } from '../utils/format';
+import { fmt, isFiniteNumber } from '../utils/format';
 
 type Row = {
   platform?: string; name?: string;
@@ -16,8 +16,8 @@ const COLS = [
   { key: 'clicks', label: 'Clicks', fmt: (v: number) => fmt(v, 0), align: 'right' as const },
   { key: 'leads', label: 'Leads', fmt: (v: number) => fmt(v, 0), align: 'right' as const },
   { key: 'cpl', label: 'CPL', fmt: (v: number) => fmt(v ?? 0, 2), align: 'right' as const },
-  { key: 'views', label: 'Views', fmt: (v: number) => (v ?? 0) ? fmt(v, 0) : '—', align: 'right' as const },
-  { key: 'engagements', label: 'Eng.', fmt: (v: number) => (v ?? 0) ? fmt(v, 0) : '—', align: 'right' as const },
+  { key: 'views', label: 'Views', fmt: (v: number) => (isFiniteNumber(v) ? fmt(v, 0) : '—'), align: 'right' as const },
+  { key: 'engagements', label: 'Eng.', fmt: (v: number) => (isFiniteNumber(v) ? fmt(v, 0) : '—'), align: 'right' as const },
   { key: 'ctr', label: 'CTR', fmt: (v: number) => fmt((v ?? 0) * 100, 2) + '%', align: 'right' as const },
   { key: 'cpc', label: 'CPC', fmt: (v: number) => fmt(v ?? 0, 2), align: 'right' as const },
   { key: 'cpm', label: 'CPM', fmt: (v: number) => fmt(v ?? 0, 2), align: 'right' as const },
@@ -80,8 +80,8 @@ export function ResultsTablePro({ rows, totals, currency }: { rows: Row[]; total
             <td className="tnum text-right">{fmt(totals.clicks || 0, 0)}</td>
             <td className="tnum text-right">{fmt(totals.leads || 0, 0)}</td>
             <td className="tnum text-right">{fmt((totals.CPL_total ?? totals.cpl ?? 0), 2)}</td>
-            <td className="tnum text-right">{totals.views ? fmt(totals.views, 0) : '—'}</td>
-            <td className="tnum text-right">{totals.engagements ? fmt(totals.engagements, 0) : '—'}</td>
+            <td className="tnum text-right">{isFiniteNumber(totals.views) ? fmt(totals.views, 0) : '—'}</td>
+            <td className="tnum text-right">{isFiniteNumber(totals.engagements) ? fmt(totals.engagements, 0) : '—'}</td>
             <td className="tnum text-right"></td>
             <td className="tnum text-right"></td>
             <td className="tnum text-right"></td>

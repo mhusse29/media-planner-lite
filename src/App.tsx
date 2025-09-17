@@ -16,7 +16,7 @@ import ResultsByPlatformCard from './components/ResultsByPlatformCard';
 import ColumnsDialog from './components/ColumnsDialog';
 import type { ColumnDef } from './components/ColumnsDialog';
 import RecommendationsCard from './components/RecommendationsCard';
-import { fmt } from './utils/format';
+import { fmt, isFiniteNumber } from './utils/format';
 import { deriveDisplayWeights } from './utils/split';
 import { AllocationCard } from './components/AllocationCard';
 import { CostOverridesCard } from './components/CostOverridesCard';
@@ -259,8 +259,8 @@ function App() {
     clicks: fmt(r.clicks, 0),
     leads: fmt(r.leads, 0),
     cpl: fmt(r.cpl, 2),
-    views: r.views ? fmt(r.views, 0) : "—",
-    eng: r.engagements ? fmt(r.engagements, 0) : "—",
+    views: isFiniteNumber(r.views) ? fmt(r.views, 0) : "—",
+    eng: isFiniteNumber(r.engagements) ? fmt(r.engagements, 0) : "—",
     ctr: `${fmt(r.ctr * 100, 2)}%`,
     cpc: fmt(r.cpc, 2),
     cpm: fmt(r.cpm, 2),
@@ -273,12 +273,12 @@ function App() {
     clicks: fmt(totals.clicks, 0),
     leads: fmt(totals.leads, 0),
     cpl: fmt(totals.cpl, 2),
-    views: totals.views ? fmt(totals.views, 0) : "—",
-    eng: totals.engagements ? fmt(totals.engagements, 0) : "—",
+    views: isFiniteNumber(totals.views) ? fmt(totals.views, 0) : "—",
+    eng: isFiniteNumber(totals.engagements) ? fmt(totals.engagements, 0) : "—",
     ctr: "—",
     cpc: "—",
     cpm: "—",
-    roas: totals.roas ? `${fmt(totals.roas, 2)}x` : "—",
+    roas: isFiniteNumber(totals.roas) ? `${fmt(totals.roas, 2)}x` : "—",
   };
 
   // Charts data (Budget Split)
