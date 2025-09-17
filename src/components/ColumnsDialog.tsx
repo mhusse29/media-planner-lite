@@ -14,8 +14,52 @@ export default function ColumnsDialog({
   useEffect(() => {
     if (!open) return;
     const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try { setCols(JSON.parse(saved)); } catch {}
+    if (!saved) return;
+
+    const normalizeVisible = (value: unknown): boolean | undefined => {
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") return value !== 0;
+      if (typeof value === "string") {
+        if (value === "true" || value === "1") return true;
+        if (value === "false" || value === "0") return false;
+      }
+      return undefined;
+    };
+
+    try {
+      const parsed = JSON.parse(saved);
+      const maybeArray = Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === "object" && "columns" in parsed && Array.isArray((parsed as any).columns)
+          ? (parsed as any).columns
+          : null;
+
+      if (!maybeArray) return;
+
+      const visibility = new Map<string, boolean>();
+      for (const entry of maybeArray) {
+        if (!entry || typeof entry !== "object") continue;
+        const key = (entry as { key?: unknown }).key;
+        if (typeof key !== "string") continue;
+        const vis = normalizeVisible((entry as { visible?: unknown }).visible);
+        if (vis === undefined) continue;
+        visibility.set(key, vis);
+      }
+
+      if (visibility.size === 0) return;
+
+      setCols(current => {
+        let changed = false;
+        const next = current.map(col => {
+          const vis = visibility.get(col.key);
+          if (vis === undefined || col.visible === vis) return col;
+          changed = true;
+          return { ...col, visible: vis };
+        });
+        return changed ? next : current;
+      });
+    } catch {
+      // ignore malformed JSON payloads
     }
   }, [open, setCols, storageKey]);
 
