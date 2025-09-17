@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 export type ColumnDef = { key: string; label: string; visible: boolean };
 
@@ -8,7 +9,7 @@ export default function ColumnsDialog({
   open: boolean;
   onClose: () => void;
   cols: ColumnDef[];
-  setCols: (c: ColumnDef[]) => void;
+  setCols: Dispatch<SetStateAction<ColumnDef[]>>;
   storageKey?: string;
 }) {
   useEffect(() => {
