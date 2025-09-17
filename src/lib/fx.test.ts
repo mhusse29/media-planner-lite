@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_RATES, refreshRates, saveRates, loadRates, type Rates } from './fx';
+import { DEFAULT_RATES, refreshRates, saveRates, loadRates, loadTs, hostProvider, type Rates } from './fx';
 
 const KEY_TS = 'mpl_fx_usd_per_ts_v2';
 
@@ -41,6 +41,49 @@ describe('refreshRates', () => {
     expect(persisted.EGP).toBe(50);
   });
 
+  it('fetches via hostProvider once, updates the timestamp, and serves cached rates within TTL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        rates: {
+          EGP: 31.5,
+          AED: 3.665,
+          SAR: 3.75,
+          EUR: 0.92,
+        },
+      }),
+    } as unknown as Response);
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const ttlMs = 60_000;
+    const firstNow = 1_234_567_000;
+    const cachedNow = firstNow + ttlMs / 2;
+
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(firstNow)
+      .mockReturnValueOnce(cachedNow);
+
+    const first = await refreshRates(hostProvider, ttlMs);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://api.exchangerate.host/latest?base=USD&symbols=EGP,AED,SAR,EUR');
+    expect(first).toMatchObject({
+      USD: 1,
+      EGP: 31.5,
+      AED: 3.665,
+      SAR: 3.75,
+      EUR: 0.92,
+    });
+    expect(loadRates()).toEqual(first);
+    expect(loadTs()).toBe(firstNow);
+
+    const second = await refreshRates(hostProvider, ttlMs);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(first);
+  });
+
   it('skips the provider call when cached rates are still fresh', async () => {
     const seeded: Rates = { ...DEFAULT_RATES, EUR: 0.9 };
     saveRates(seeded);
@@ -71,5 +114,6 @@ describe('refreshRates', () => {
 
     expect(provider).toHaveBeenCalledTimes(1);
     expect(loadRates()).toEqual(seeded);
+    expect(localStorage.getItem(KEY_TS)).toBe(String(now - 10));
   });
 });
