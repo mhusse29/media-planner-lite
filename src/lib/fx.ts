@@ -61,9 +61,10 @@ export async function refreshRates(provider: LiveFxProvider, ttlMs = 6*60*60*100
     const merged: Rates = { ...current, ...live };
     saveRates(merged); saveTs(now);
     return merged;
-  } catch {
-    // keep current on failure
-    return current;
+  } catch (err) {
+    // keep current on failure but surface the error for callers
+    if (err instanceof Error) throw err;
+    throw new Error('Failed to refresh FX rates');
   }
 }
 

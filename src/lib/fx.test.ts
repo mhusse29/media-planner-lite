@@ -57,7 +57,7 @@ describe('refreshRates', () => {
     expect(result).toEqual(seeded);
   });
 
-  it('returns existing rates when the provider rejects', async () => {
+  it('bubbles the provider error while leaving existing rates untouched', async () => {
     const seeded: Rates = { ...DEFAULT_RATES, AED: 3.66 };
     saveRates(seeded);
 
@@ -67,10 +67,9 @@ describe('refreshRates', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
 
     const provider = vi.fn().mockRejectedValue(new Error('network down'));
-    const result = await refreshRates(provider, ttlMs);
+    await expect(refreshRates(provider, ttlMs)).rejects.toThrow('network down');
 
     expect(provider).toHaveBeenCalledTimes(1);
-    expect(result).toEqual(seeded);
     expect(loadRates()).toEqual(seeded);
   });
 });
