@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { Platform, Goal, Market, Currency } from '../lib/assumptions';
 import { PLATFORM_LABELS } from '../lib/utils';
 import SplitControlsRow from './SplitControlsRow';
@@ -28,13 +29,46 @@ type Props = {
 };
 
 export default function MediaPlannerCard(p: Props){
+  const id = useId();
+  const budgetId = `${id}-budget`;
+  const currencyId = `${id}-currency`;
+  const marketId = `${id}-market`;
+  const nicheId = `${id}-niche`;
+  const leadSaleId = `${id}-lead-sale`;
+  const revenueId = `${id}-revenue`;
+  const goalLabelId = `${id}-goal`;
+  const platformsLabelId = `${id}-platforms`;
+
+  const objectives: { value: Goal; label: string }[] = [
+    { value: 'LEADS', label: 'Leads' },
+    { value: 'TRAFFIC', label: 'Traffic' },
+    { value: 'AWARENESS', label: 'Awareness' },
+  ];
+
+  const renderObjective = (objective: { value: Goal; label: string }) => {
+    const active = p.goal === objective.value;
+    return (
+      <button
+        key={objective.value}
+        type="button"
+        className={`planner-pill${active ? ' is-active' : ''}`}
+        aria-pressed={active}
+        onClick={() => p.onGoalChange(objective.value)}
+      >
+        {objective.label}
+      </button>
+    );
+  };
+
   const platformChip = (platform: Platform) => {
     const active = p.selectedPlatforms.includes(platform);
     const label = PLATFORM_LABELS[platform] || platform;
     return (
       <button
         key={platform}
-        className={`mp-chip ${active ? "is-active" : ""}`}
+        type="button"
+        className={`planner-chip${active ? ' is-active' : ''}`}
+        aria-pressed={active}
         onClick={() => p.onPlatformToggle(platform)}
       >
         {label}
@@ -43,126 +77,133 @@ export default function MediaPlannerCard(p: Props){
   };
 
   return (
-    <section className="mp-card">
-      <header className="mp-card__header">
-        <h3 className="mp-title">Media Planner</h3>
-        {/* removed right badges to tighten header */}
-      </header>
+    <section className="planner-card" aria-labelledby={`${id}-card-title`}>
+      <div className="planner-tag" id={`${id}-card-title`}>
+        Media planner
+      </div>
+      <div className="planner-card__content">
+        <div>
+          <div className="planner-tag">Campaign inputs</div>
+          <label className="planner-field" htmlFor={budgetId}>
+            <span className="planner-label">Total budget</span>
+            <input
+              id={budgetId}
+              className="planner-input"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={100}
+              value={p.totalBudget}
+              onChange={(e) => p.onTotalBudgetChange(Number(e.target.value) || 0)}
+              placeholder="Enter media spend only"
+            />
+            <span className="planner-hint">Media spend only; excludes management/design fees.</span>
+          </label>
 
-      {/* Form grid */}
-      <div className="mp-grid">
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Total Budget</div>
-          <input
-            className="mp-input"
-            type="number"
-            value={p.totalBudget}
-            onChange={(e) => p.onTotalBudgetChange(Number(e.target.value) || 0)}
-            placeholder="Enter media spend only"
-            min="0"
-            step="100"
-          />
-          <div className="mp-hint">Media spend only; excludes management/design fees.</div>
+          <label className="planner-field" htmlFor={currencyId}>
+            <span className="planner-label">Currency</span>
+            <select
+              id={currencyId}
+              className="planner-select"
+              value={p.currency}
+              onChange={(e) => p.onCurrencyChange(e.target.value as Currency)}
+            >
+              <option value="EGP">EGP</option>
+              <option value="USD">USD</option>
+              <option value="AED">AED</option>
+              <option value="SAR">SAR</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </label>
         </div>
 
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Currency</div>
-          <select
-            className="mp-select"
-            value={p.currency}
-            onChange={(e) => p.onCurrencyChange(e.target.value as Currency)}
-          >
-            <option value="EGP">EGP</option>
-            <option value="USD">USD</option>
-            <option value="AED">AED</option>
-            <option value="SAR">SAR</option>
-            <option value="EUR">EUR</option>
-          </select>
+        <div>
+          <div className="planner-tag">Targeting</div>
+          <label className="planner-field" htmlFor={marketId}>
+            <span className="planner-label">Market</span>
+            <select
+              id={marketId}
+              className="planner-select"
+              value={p.market}
+              onChange={(e) => p.onMarketChange(e.target.value as Market)}
+            >
+              <option value="Egypt">Egypt</option>
+              <option value="Saudi Arabia">Saudi Arabia</option>
+              <option value="UAE">UAE</option>
+              <option value="Europe">Europe</option>
+            </select>
+          </label>
+
+          <label className="planner-field" htmlFor={nicheId}>
+            <span className="planner-label">Niche</span>
+            <select
+              id={nicheId}
+              className="planner-select"
+              value={p.niche}
+              onChange={(e) => p.onNicheChange(e.target.value)}
+            >
+              {p.nicheOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            <span className="planner-hint">Auto-sets close rate & revenue per sale (editable).</span>
+          </label>
+
+          <label className="planner-field" htmlFor={leadSaleId}>
+            <span className="planner-label">Lead→Sale %</span>
+            <input
+              id={leadSaleId}
+              className="planner-input"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={100}
+              step={1}
+              value={p.leadToSale}
+              onChange={(e) => p.onLeadToSaleChange(Number(e.target.value) || 0)}
+            />
+          </label>
+
+          <label className="planner-field" htmlFor={revenueId}>
+            <span className="planner-label">Revenue per sale</span>
+            <input
+              id={revenueId}
+              className="planner-input"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={50}
+              value={p.revenuePerSale}
+              onChange={(e) => p.onRevenuePerSaleChange(Number(e.target.value) || 0)}
+            />
+          </label>
         </div>
 
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Market</div>
-          <select
-            className="mp-select"
-            value={p.market}
-            onChange={(e) => p.onMarketChange(e.target.value as Market)}
-          >
-            <option value="Egypt">Egypt</option>
-            <option value="Saudi Arabia">Saudi Arabia</option>
-            <option value="UAE">UAE</option>
-            <option value="Europe">Europe</option>
-          </select>
+        <div>
+          <div className="planner-tag" id={goalLabelId}>Objective</div>
+          <div className="planner-objectives" role="group" aria-labelledby={goalLabelId}>
+            {objectives.map(renderObjective)}
+          </div>
+          <span className="planner-hint">Adjusts auto budget split unless manual % is on.</span>
         </div>
 
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Goal</div>
-          <select
-            className="mp-select"
-            value={p.goal}
-            onChange={(e) => p.onGoalChange(e.target.value as Goal)}
-          >
-            <option value="LEADS">Leads</option>
-            <option value="TRAFFIC">Traffic</option>
-            <option value="AWARENESS">Awareness</option>
-          </select>
-          <div className="mp-hint">Changes auto budget split unless manual % is on.</div>
+        <div>
+          <div className="planner-tag" id={platformsLabelId}>Platforms</div>
+          <div className="planner-chips" role="group" aria-labelledby={platformsLabelId}>
+            {p.platforms.map(platformChip)}
+          </div>
         </div>
 
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Niche</div>
-          <select
-            className="mp-select"
-            value={p.niche}
-            onChange={(e) => p.onNicheChange(e.target.value)}
-          >
-            {p.nicheOptions.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-          <div className="mp-hint">Auto-sets close-rate & revenue per sale (editable).</div>
-        </div>
-
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Lead→Sale %</div>
-          <input
-            className="mp-input" 
-            type="number" 
-            min={0} 
-            max={100}
-            value={p.leadToSale}
-            onChange={(e) => p.onLeadToSaleChange(Number(e.target.value) || 0)}
-            step="1"
-          />
-        </div>
-
-        <div className="mp-field mp-col-6">
-          <div className="mp-label">Revenue per Sale</div>
-          <input
-            className="mp-input" 
-            type="number" 
-            min={0}
-            value={p.revenuePerSale}
-            onChange={(e) => p.onRevenuePerSaleChange(Number(e.target.value) || 0)}
-            step="50"
+        <div>
+          <div className="planner-tag">Live preview</div>
+          <SplitControlsRow
+            mode={p.mode}
+            includeAll={p.includeAll}
+            onChangeMode={p.onModeChange}
+            onIncludeAllChange={p.onIncludeAllChange}
           />
         </div>
       </div>
-
-      {/* Platforms */}
-      <div className="mp-field" style={{marginTop:"20px"}}>
-        <div className="mp-label">Platforms</div>
-        <div className="mp-chips">
-          {p.platforms.map(platformChip)}
-        </div>
-      </div>
-
-      {/* Split Controls Row */}
-      <SplitControlsRow
-        mode={p.mode}
-        includeAll={p.includeAll}
-        onChangeMode={p.onModeChange}
-        onIncludeAllChange={p.onIncludeAllChange}
-      />
     </section>
   );
 }
