@@ -1,6 +1,8 @@
 import './styles/theme.css'
 import './styles/charts.css'
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
+import type { Easing } from 'framer-motion';
 import type { Platform, Goal, Market, Currency } from './lib/assumptions';
 import { NICHE_DEFAULTS } from './lib/assumptions';
 import { calculateResults, calculateTotals } from './lib/math';
@@ -23,8 +25,10 @@ import { CostOverridesCard } from './components/CostOverridesCard';
 import { FxManager } from './components/FxManager';
 import { hasRate } from './lib/fx';
 import MediaPlannerCard from './components/MediaPlannerCard';
+import { AnimatedCounter } from './components/ui/AnimatedCounter';
 
 const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GOOGLE_DISPLAY', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
+const HERO_EASE = [0.4, 0, 0.2, 1] as const satisfies Easing;
 const PLATFORM_NAME_MAP: Record<string, string> = Object.fromEntries(
   ALL_PLATFORMS.map((platform) => [platform, PLATFORM_LABELS[platform] || platform])
 );
@@ -252,6 +256,42 @@ function App() {
   };
 
   const fxOk = hasRate(currency as any);
+  const prefersReducedMotion = useReducedMotion();
+  const plannerRef = useRef<HTMLElement | null>(null);
+  const plannerInView = useInView(plannerRef, { margin: '-25% 0px -25% 0px' });
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('planner-in', plannerInView);
+    return () => document.body.classList.remove('planner-in');
+  }, [plannerInView]);
+
+  const heroVariants = useMemo(() => ({
+    hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: HERO_EASE } },
+  }), [prefersReducedMotion]);
+
+  const gridVariants = useMemo(() => (
+    prefersReducedMotion
+      ? { hidden: {}, visible: {} }
+      : { hidden: {}, visible: { transition: { staggerChildren: 0.04, delayChildren: 0.04 } } }
+  ), [prefersReducedMotion]);
+
+  const itemVariants = useMemo(() => ({
+    hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: HERO_EASE } },
+  }), [prefersReducedMotion]);
+
+  const scrollToSection = useCallback((id: string) => {
+    if (typeof document === 'undefined') return;
+    const node = document.getElementById(id);
+    if (node) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  const scrollToResults = useCallback(() => scrollToSection('results-section'), [scrollToSection]);
+  const scrollToAdvanced = useCallback(() => scrollToSection('advanced-planner'), [scrollToSection]);
 
   // Prepare data for charts and table
   const rowsFmt = results.map(r => ({
@@ -392,120 +432,164 @@ function App() {
         </div>
       </header>
 
-      <main className="container section">
+      <main className="pb-24">
+        <motion.section
+          ref={plannerRef}
+          className="planner-shell"
+          variants={heroVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div className="planner-grid" variants={gridVariants}>
+            <motion.div className="planner-copy" variants={itemVariants}>
+              <span className="planner-tag">Live preview</span>
+              <h2 className="planner-heading">Plan a sample campaign</h2>
+              <p className="planner-subcopy">
+                Tune budgets, objectives, and assumptions to watch cross-channel performance update instantly.
+              </p>
+              <p className="planner-note">
+                Numbers refresh in real time as you edit inputs. Scroll for full results or jump into advanced controls.
+              </p>
+              <motion.div className="planner-cta" variants={itemVariants}>
+                <motion.button
+                  type="button"
+                  className="planner-btn planner-btn-primary"
+                  onClick={scrollToResults}
+                  whileHover={prefersReducedMotion ? undefined : { y: -1 }}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+                >
+                  See full results →
+                </motion.button>
+                <motion.button
+                  type="button"
+                  className="planner-btn planner-link"
+                  onClick={scrollToAdvanced}
+                  whileHover={prefersReducedMotion ? undefined : { y: -1 }}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+                >
+                  Open advanced planner →
+                </motion.button>
+              </motion.div>
+            </motion.div>
+            <motion.div className="planner-card-wrap" variants={itemVariants}>
+              <MediaPlannerCard
+                totalBudget={totalBudget}
+                currency={currency}
+                market={market}
+                goal={goal}
+                niche={niche}
+                leadToSale={leadToSalePercent}
+                revenuePerSale={revenuePerSale}
+                platforms={ALL_PLATFORMS}
+                selectedPlatforms={selectedPlatforms}
+                mode={mode}
+                includeAll={includeAll}
+                onTotalBudgetChange={setTotalBudget}
+                onCurrencyChange={setCurrency}
+                onMarketChange={setMarket}
+                onGoalChange={setGoal}
+                onNicheChange={handleNicheChange}
+                onLeadToSaleChange={setLeadToSalePercent}
+                onRevenuePerSaleChange={setRevenuePerSale}
+                onPlatformToggle={(platform) => {
+                  if (selectedPlatforms.includes(platform)) {
+                    setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform));
+                  } else {
+                    setSelectedPlatforms([...selectedPlatforms, platform]);
+                  }
+                }}
+                onModeChange={setMode}
+                onIncludeAllChange={setIncludeAll}
+                nicheOptions={Object.keys(NICHE_DEFAULTS)}
+              />
+            </motion.div>
+          </motion.div>
+        </motion.section>
 
-        {/* Main Content Grid */}
-        <div className="section grid md:grid-cols-[1.1fr_1fr] gap-5">
-          {/* Planner Panel */}
-          <MediaPlannerCard
-            totalBudget={totalBudget}
-            currency={currency}
-            market={market}
-            goal={goal}
-            niche={niche}
-            leadToSale={leadToSalePercent}
-            revenuePerSale={revenuePerSale}
-            platforms={ALL_PLATFORMS}
-            selectedPlatforms={selectedPlatforms}
-            mode={mode}
-            includeAll={includeAll}
-            onTotalBudgetChange={setTotalBudget}
-            onCurrencyChange={setCurrency}
-            onMarketChange={setMarket}
-            onGoalChange={setGoal}
-            onNicheChange={handleNicheChange}
-            onLeadToSaleChange={setLeadToSalePercent}
-            onRevenuePerSaleChange={setRevenuePerSale}
-            onPlatformToggle={(platform) => {
-              if (selectedPlatforms.includes(platform)) {
-                setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform));
-              } else {
-                setSelectedPlatforms([...selectedPlatforms, platform]);
-              }
-            }}
-            onModeChange={setMode}
-            onIncludeAllChange={setIncludeAll}
-            nicheOptions={Object.keys(NICHE_DEFAULTS)}
-          />
-
-          {/* FX Warning */}
-          {!fxOk && (
-            <div className="rowCard warn" style={{marginTop:8}}>
-      <div>
-                <div className="title">FX rate missing for {currency}.</div>
-                <div className="sub">We'll assume your CPM/CPC/CPL are already in {currency}. Set a rate to normalize math.</div>
+        <section id="results-section" className="section">
+          <div className="container flex flex-col gap-8">
+            {results.length > 0 && (
+              <div className="max-w-3xl">
+                <KpiCards totals={totals} currency={currency} />
               </div>
-              <button className="secBtn" onClick={()=>setShowFx(true)}>Manage FX</button>
+            )}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <BudgetDonutPro
+                data={donutData}
+                centerValue={centerValue}
+                centerLabel={centerLabel}
+              />
+              <ImpressionsBarsPro data={barsData} title="IMPRESSIONS" />
             </div>
-          )}
-
-          {/* FX Manager Modal */}
-          {showFx && <FxManager current={currency as any} onClose={()=>setShowFx(false)} />}
-
-          {/* Platform Allocation Card */}
-          <AllocationCard
-            selected={selectedPlatforms as unknown as string[]}
-            names={platformNames}
-            mode={mode}
-            pctMap={selectedPlatforms.reduce((acc, p)=>{ acc[p]= Math.max(0, platformWeights[p]??0); return acc; }, {} as Record<string,number>)}
-            setPctMap={(next)=>{
-              const updated = { ...platformWeights } as Record<Platform, number>;
-              (Object.keys(next) as string[]).forEach(k=>{ updated[k as Platform] = Math.max(0, Number((next as any)[k])||0); });
-              setPlatformWeights(updated);
-            }}
-          />
-          <CostOverridesCard
-            selected={selectedPlatforms as unknown as string[]}
-            names={platformNames}
-            currency={currency}
-            manualCpl={manualCPL}
-            setManualCpl={setManualCPL}
-            cplMap={platformCPLs as unknown as Record<string, number>}
-            setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
-          />
-
-          {/* Charts Panel */}
-          <div className="chart-stack">
-            <BudgetDonutPro
-              data={donutData}
-              centerValue={centerValue}
-              centerLabel={centerLabel}
-            />
-            <ImpressionsBarsPro data={barsData} title="IMPRESSIONS" />
+            {results.length > 0 && (
+              <ResultsByPlatformCard
+                rows={rowsFmt}
+                totals={totalsFmt}
+                showInlineKpis={false}
+                columns={cols}
+                onOpenColumns={() => setColumnsOpen(true)}
+              />
+            )}
+            {results.length > 0 && recommendations.length > 0 && (
+              <RecommendationsCard
+                items={recommendations.map(rec => `${PLATFORM_LABELS[rec.platform]}: ${rec.text}`)}
+              />
+            )}
           </div>
-        </div>
+        </section>
 
-        {/* KPI Cards */}
-        {results.length > 0 && (
-          <KpiCards totals={totals} currency={currency} />
-        )}
+        <section id="advanced-planner" className="section">
+          <div className="container flex flex-col gap-6">
+            <div className="space-y-2">
+              <span className="planner-tag">Advanced planner</span>
+              <h2 className="text-2xl font-semibold text-white">Fine-tune allocations & assumptions</h2>
+              <p className="planner-note">
+                Switch to manual splits, override CPL assumptions, and manage FX in one place.
+              </p>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <AllocationCard
+                selected={selectedPlatforms as unknown as string[]}
+                names={platformNames}
+                mode={mode}
+                pctMap={selectedPlatforms.reduce((acc, p)=>{ acc[p]= Math.max(0, platformWeights[p]??0); return acc; }, {} as Record<string,number>)}
+                setPctMap={(next)=>{
+                  const updated = { ...platformWeights } as Record<Platform, number>;
+                  (Object.keys(next) as string[]).forEach(k=>{ updated[k as Platform] = Math.max(0, Number((next as any)[k])||0); });
+                  setPlatformWeights(updated);
+                }}
+              />
+              <CostOverridesCard
+                selected={selectedPlatforms as unknown as string[]}
+                names={platformNames}
+                currency={currency}
+                manualCpl={manualCPL}
+                setManualCpl={setManualCPL}
+                cplMap={platformCPLs as unknown as Record<string, number>}
+                setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
+              />
+            </div>
+            {!fxOk && (
+              <div className="rowCard warn">
+                <div>
+                  <div className="title">FX rate missing for {currency}.</div>
+                  <div className="sub">We'll assume your CPM/CPC/CPL are already in {currency}. Set a rate to normalize math.</div>
+                </div>
+                <button className="secBtn" onClick={()=>setShowFx(true)}>Manage FX</button>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
 
-        {/* Results by Platform */}
-        {results.length > 0 && (
-          <ResultsByPlatformCard 
-            rows={rowsFmt} 
-            totals={totalsFmt} 
-            showInlineKpis={false}
-            columns={cols}
-            onOpenColumns={() => setColumnsOpen(true)}
-          />
-        )}
+      {showFx && <FxManager current={currency as any} onClose={()=>setShowFx(false)} />}
 
-        {/* Recommendations */}
-        {results.length > 0 && recommendations.length > 0 && (
-          <RecommendationsCard 
-            items={recommendations.map(rec => `${PLATFORM_LABELS[rec.platform]}: ${rec.text}`)}
-          />
-        )}
-
-      {/* Columns Dialog */}
       <ColumnsDialog
         open={columnsOpen}
         onClose={() => setColumnsOpen(false)}
         cols={cols}
         setCols={setCols}
       />
-      </main>
     </div>
   );
 }
@@ -513,30 +597,63 @@ function App() {
 
 // KPI Cards Component
 function KpiCards({ totals, currency }: { totals: any; currency: string }) {
+  const budget = typeof totals?.budget === 'number' ? totals.budget : null;
+  const reach = typeof totals?.reach === 'number' ? totals.reach : null;
+  const cpl = typeof totals?.cpl === 'number' ? totals.cpl : null;
+  const roas = typeof totals?.roas === 'number' ? totals.roas : null;
+
   return (
-    <div className="kpiGroup">
-      <div className="kpiGrid">
-        <div className="kpiCell">
-          <div className="kpiLabel">$ Total Budget</div>
-          <div className="kpiValue">{formatCurrency(totals.budget, currency)}</div>
+    <section className="kpi-panel">
+      <div className="planner-tag">KPI summary</div>
+      <div className="kpi-list">
+        <div className="kpi-row">
+          <div className="kpi-label">
+            <span className="kpi-dot kpi-dot--accent" />
+            <span>Budget</span>
+          </div>
+          <AnimatedCounter
+            value={budget}
+            formatter={(value) => formatCurrency(value, currency)}
+            className="kpi-value"
+          />
         </div>
-        <div className="kpiCell">
-          <div className="kpiLabel">⌖ Total Clicks</div>
-          <div className="kpiValue">{formatNumber(totals.clicks)}</div>
+        <div className="kpi-row">
+          <div className="kpi-label">
+            <span className="kpi-dot kpi-dot--reach" />
+            <span>Reach</span>
+          </div>
+          <AnimatedCounter
+            value={reach}
+            formatter={(value) => formatNumber(value)}
+            className="kpi-value"
+          />
         </div>
-        <div className="kpiCell">
-          <div className="kpiLabel">🎯 Total Leads</div>
-          <div className="kpiValue">{formatNumber(totals.leads)}</div>
+        <div className="kpi-row">
+          <div className="kpi-label">
+            <span className="kpi-dot kpi-dot--efficiency" />
+            <span>Efficiency (CPL)</span>
+          </div>
+          <AnimatedCounter
+            value={cpl}
+            formatter={(value) => formatCurrency(value, currency)}
+            className="kpi-value"
+          />
         </div>
-        <div className="kpiCell">
-          <div className="kpiLabel">📈 ROAS</div>
-          <div className="kpiValue">{Number.isFinite(totals?.roas) ? `${totals.roas.toFixed(2)}x` : '—'}</div>
+        <div className="kpi-row">
+          <div className="kpi-label">
+            <span className="kpi-dot kpi-dot--confidence" />
+            <span>Confidence (ROAS)</span>
+          </div>
+          <AnimatedCounter
+            value={roas}
+            formatter={(value) => `${value.toFixed(2)}x`}
+            className="kpi-value"
+          />
         </div>
       </div>
-      </div>
+    </section>
   );
 }
-
 
 
 export default App;

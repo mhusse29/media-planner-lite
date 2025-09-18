@@ -55,10 +55,22 @@ export default function ResultsByPlatformCard({
     <AppCard className="mt-6">
       {showInlineKpis && (
         <div className="kpi-row">
-          <div className="kpi-tile"><div className="kpi-label">💰 Total Budget</div><div className="kpi-value">{totals.budget ?? "—"}</div></div>
-          <div className="kpi-tile"><div className="kpi-label">👆 Total Clicks</div><div className="kpi-value">{totals.clicks ?? "—"}</div></div>
-          <div className="kpi-tile"><div className="kpi-label">🎯 Total Leads</div><div className="kpi-value">{totals.leads ?? "—"}</div></div>
-          <div className="kpi-tile"><div className="kpi-label">📈 ROAS</div><div className="kpi-value">{(totals as any).roas ?? "—"}</div></div>
+          <div className="kpi-tile">
+            <div className="kpi-label">Total Budget</div>
+            <div className="kpi-value">{totals.budget ?? "—"}</div>
+          </div>
+          <div className="kpi-tile">
+            <div className="kpi-label">Total Clicks</div>
+            <div className="kpi-value">{totals.clicks ?? "—"}</div>
+          </div>
+          <div className="kpi-tile">
+            <div className="kpi-label">Total Leads</div>
+            <div className="kpi-value">{totals.leads ?? "—"}</div>
+          </div>
+          <div className="kpi-tile">
+            <div className="kpi-label">ROAS</div>
+            <div className="kpi-value">{(totals as any).roas ?? "—"}</div>
+          </div>
         </div>
       )}
 
@@ -70,27 +82,35 @@ export default function ResultsByPlatformCard({
       </div>
 
       <div className="table-wrap">
-        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+        <table className="app-table">
           <thead className="table-head">
             <tr>
-              <th>Platform</th>
-              {activeCols.map(c => (<th key={c.key}>{c.label}</th>))}
+              <th className="text-left">Platform</th>
+              {activeCols.map(c => (
+                <th key={c.key} className={c.key === "name" ? "text-left" : "text-right"}>{c.label}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((r, i) => (
               <tr key={(r.name || r.platform || "") + i} className="table-row">
-                <td><span className="app-chip" style={{ background:"#1A1C1E" }}>{r.name || r.platform}</span></td>
+                <td className="text-left">
+                  <span className="app-chip">{r.name || r.platform}</span>
+                </td>
                 {activeCols.map(c => (
-                  <td key={c.key}>
+                  <td key={c.key} className={c.key === "name" ? "text-left" : "text-right"}>
                     {c.key === "budget" ? <span className="table-badge">{(r as any)[c.key]}</span> : (r as any)[c.key] ?? "—"}
                   </td>
                 ))}
               </tr>
             ))}
-            <tr className="table-row" style={{ background: "rgba(255,255,255,0.02)" }}>
-              <td><strong>Total</strong></td>
-              {activeCols.map(c => (<td key={c.key}><strong>{(totals as any)[c.key] ?? "—"}</strong></td>))}
+            <tr className="table-row table-row--total">
+              <td className="text-left">Total</td>
+              {activeCols.map(c => (
+                <td key={c.key} className={c.key === "name" ? "text-left" : "text-right"}>
+                  {(totals as any)[c.key] ?? "—"}
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>

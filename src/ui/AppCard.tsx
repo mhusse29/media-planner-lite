@@ -1,8 +1,8 @@
-import type { PropsWithChildren } from "react";
+import type { HTMLAttributes, PropsWithChildren } from "react";
 
-export default function AppCard({ children, className = "" }: PropsWithChildren<{className?: string}>) {
+export default function AppCard({ children, className = "", ...props }: PropsWithChildren<HTMLAttributes<HTMLElement>>) {
   return (
-    <section className={`app-card ${className}`} style={{ padding: 12 }}>
+    <section className={`app-card ${className}`.trim()} {...props}>
       {children}
     </section>
   );

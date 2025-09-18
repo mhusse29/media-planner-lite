@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import AppCard from "../ui/AppCard";
 
 export type ColumnDef = { key: string; label: string; visible: boolean };
 
@@ -73,39 +74,45 @@ export default function ColumnsDialog({
   if (!open) return null;
 
   return (
-    <div style={{
-      position:"fixed", inset:0, background:"rgba(0,0,0,.5)", zIndex:50,
-      display:"flex", alignItems:"center", justifyContent:"center"
-    }} onClick={onClose}>
-      <div
-        className="app-card"
-        style={{ width: 420, padding:16, background: "var(--card-bg)" }}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(6, 10, 17, 0.72)",
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}
+      onClick={onClose}
+    >
+      <AppCard
+        className="columns-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Select columns to display"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ fontWeight:700, marginBottom:8, color: "var(--text)" }}>Columns</div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div className="app-card__header">
+          <span className="app-card__eyebrow">Columns</span>
+          <span className="app-card__subtitle">Choose which metrics appear in the channel breakdown.</span>
+        </div>
+        <div className="columns-grid">
           {cols.map(c => (
-            <label key={c.key} className="app-card--inner" style={{ 
-              padding:8, 
-              display:"flex", 
-              alignItems:"center", 
-              gap:8,
-              cursor: "pointer"
-            }}>
-              <input 
-                type="checkbox" 
-                checked={c.visible} 
+            <label key={c.key} className="columns-option">
+              <input
+                type="checkbox"
+                checked={c.visible}
                 onChange={() => toggle(c.key)}
-                style={{ accentColor: "var(--accent)" }}
               />
-              <span style={{ color:"var(--text)" }}>{c.label}</span>
+              <span>{c.label}</span>
             </label>
           ))}
         </div>
-        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}>
+        <div className="columns-footer">
           <button className="columns-btn" onClick={onClose}>Done</button>
         </div>
-      </div>
+      </AppCard>
     </div>
   );
 }

@@ -3,14 +3,14 @@ import AppCard from "../ui/AppCard";
 export default function RecommendationsCard({ items }: { items: string[] }) {
   return (
     <AppCard className="mt-4">
-      <div style={{ padding:"12px 12px 4px", borderBottom:"1px solid var(--card-border)" }}>
-        <div style={{ fontWeight:700, letterSpacing:.2, color: "var(--text)" }}>RECOMMENDATIONS</div>
+      <div className="app-card__header">
+        <span className="app-card__eyebrow">Recommendations</span>
       </div>
-      <div className="app-card--inner" style={{ margin:12, padding:12 }}>
-        <ul style={{ display:"grid", gap:8 }}>
+      <div className="app-card--inner">
+        <ul className="recommendations-list">
           {items.map((t, i) => (
-            <li key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, color:"var(--muted)", lineHeight:1.5 }}>
-              <span className="app-dot" style={{ marginTop:6 }} />
+            <li key={i} className="recommendations-item">
+              <span className="app-dot" />
               <span>{t}</span>
             </li>
           ))}
