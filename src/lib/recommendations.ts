@@ -73,7 +73,7 @@ export function generateRecommendations(results: PlatformResult[]): Recommendati
         }
         break;
 
-      case 'LINKEDIN':
+      case 'LINKEDIN': {
         // Check if LinkedIn CPL is > 2x Meta average
         const metaResults = results.filter(r => r.platform === 'FACEBOOK' || r.platform === 'INSTAGRAM');
         if (metaResults.length > 0) {
@@ -87,6 +87,35 @@ export function generateRecommendations(results: PlatformResult[]): Recommendati
           }
         }
         break;
+      }
+    }
+  }
+
+  const instagramResult = results.find(r => r.platform === 'INSTAGRAM');
+  const tiktokResult = results.find(r => r.platform === 'TIKTOK');
+
+  if (
+    instagramResult &&
+    tiktokResult &&
+    instagramResult.impressions > 0 &&
+    tiktokResult.impressions > 0
+  ) {
+    const instagramEngagementRate = instagramResult.engagements / instagramResult.impressions;
+    const tiktokEngagementRate = tiktokResult.engagements / tiktokResult.impressions;
+    const ENGAGEMENT_GAP_THRESHOLD = 0.75;
+
+    if (tiktokEngagementRate < instagramEngagementRate * ENGAGEMENT_GAP_THRESHOLD) {
+      recommendations.push({
+        platform: 'TIKTOK',
+        text: "TikTok engagement trails Instagram; test new hooks or creative formats.",
+        type: 'suggestion'
+      });
+    } else if (instagramEngagementRate < tiktokEngagementRate * ENGAGEMENT_GAP_THRESHOLD) {
+      recommendations.push({
+        platform: 'INSTAGRAM',
+        text: "Instagram engagement trails TikTok; refresh reels, hooks, or CTA.",
+        type: 'suggestion'
+      });
     }
   }
 
