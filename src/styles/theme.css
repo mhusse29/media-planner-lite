@@ -17,6 +17,8 @@
   --inner-highlight:0 1px 0 rgba(255,255,255,0.04) inset;
   --ac-1:#3E8BFF;
   --ac-2:#6B70FF;
+  --field-h:48px;
+  --field-px:20px;
 }
 html,body,#root{height:100%}
 body{
@@ -217,7 +219,7 @@ body.planner-in .appBg::after{opacity:.18}
 .planner-select{
   height:var(--field-h);
   border-radius:999px;
-  border:1px solid rgba(255,255,255,0.05);
+  border:1px solid transparent;
   background:var(--inputBg);
   color:var(--fg);
   padding:0 var(--field-px);
@@ -590,7 +592,7 @@ body.planner-in .appBg::after{opacity:.18}
 }
 
 /* ==== GLOBAL RHYTHM ==== */
-.container{max-width:1160px;margin-inline:auto;padding-inline:16px}
+.container{max-width:1200px;margin-inline:auto;padding-inline:clamp(24px,5vw,32px)}
 .section{margin-block:32px}
 .stack-4 > * + *{margin-top:12px}
 .stack-6 > * + *{margin-top:24px}
