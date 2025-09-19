@@ -287,17 +287,6 @@ function App() {
       : { opacity: 1, y: 0, transition: baseTransition },
   }), [prefersReducedMotion, baseTransition]);
 
-  const scrollToSection = useCallback((id: string) => {
-    if (typeof document === 'undefined') return;
-    const node = document.getElementById(id);
-    if (node) {
-      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
-
-  const scrollToResults = useCallback(() => scrollToSection('results-section'), [scrollToSection]);
-  const scrollToAdvanced = useCallback(() => scrollToSection('advanced-planner'), [scrollToSection]);
-
   // Prepare data for charts and table
   const rowsFmt = results.map(r => ({
     platform: r.platform,
@@ -449,32 +438,6 @@ function App() {
             <motion.div className="planner-copy" variants={itemVariants}>
               <span className="planner-tag">Live preview</span>
               <h2 className="planner-heading">Plan a sample campaign</h2>
-              <p className="planner-subcopy">
-                Tune budgets, objectives, and assumptions to watch cross-channel performance update instantly.
-              </p>
-              <p className="planner-note">
-                Numbers refresh in real time as you edit inputs. Scroll for full results or jump into advanced controls.
-              </p>
-              <div className="planner-cta">
-                <motion.button
-                  type="button"
-                  className="planner-btn planner-btn-primary"
-                  onClick={scrollToResults}
-                  whileHover={prefersReducedMotion ? undefined : { y: -1 }}
-                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-                >
-                  See full results →
-                </motion.button>
-                <motion.button
-                  type="button"
-                  className="planner-btn planner-link"
-                  onClick={scrollToAdvanced}
-                  whileHover={prefersReducedMotion ? undefined : { y: -1 }}
-                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-                >
-                  Open advanced planner →
-                </motion.button>
-              </div>
             </motion.div>
             <motion.div className="planner-card-wrap" variants={itemVariants}>
               <MediaPlannerCard
@@ -514,9 +477,7 @@ function App() {
         <section id="results-section" className="section">
           <div className="container flex flex-col gap-8">
             {results.length > 0 && (
-              <div className="max-w-3xl">
-                <KpiCards totals={totals} currency={currency} />
-              </div>
+              <KpiCards totals={totals} currency={currency} />
             )}
             <div className="grid gap-6 lg:grid-cols-2">
               <BudgetDonutPro
