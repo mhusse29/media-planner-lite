@@ -1,7 +1,5 @@
 import { useId } from 'react';
-import type { Platform, Goal, Market, Currency } from '../lib/assumptions';
-import { PLATFORM_LABELS } from '../lib/utils';
-import SplitControlsRow from './SplitControlsRow';
+import type { Goal, Market, Currency } from '../lib/assumptions';
 
 type Props = {
   totalBudget: number;
@@ -11,10 +9,6 @@ type Props = {
   niche: string;
   leadToSale: number;
   revenuePerSale: number;
-  platforms: Platform[];
-  selectedPlatforms: Platform[];
-  mode: "auto"|"manual";
-  includeAll: boolean;
   onTotalBudgetChange: (value: number) => void;
   onCurrencyChange: (value: Currency) => void;
   onMarketChange: (value: Market) => void;
@@ -22,9 +16,6 @@ type Props = {
   onNicheChange: (value: string) => void;
   onLeadToSaleChange: (value: number) => void;
   onRevenuePerSaleChange: (value: number) => void;
-  onPlatformToggle: (platform: Platform) => void;
-  onModeChange: (mode: "auto"|"manual") => void;
-  onIncludeAllChange: (value: boolean) => void;
   nicheOptions: string[];
 };
 
@@ -37,7 +28,6 @@ export default function MediaPlannerCard(p: Props){
   const leadSaleId = `${id}-lead-sale`;
   const revenueId = `${id}-revenue`;
   const goalLabelId = `${id}-goal`;
-  const platformsLabelId = `${id}-platforms`;
 
   const objectives: { value: Goal; label: string }[] = [
     { value: 'LEADS', label: 'Leads' },
@@ -56,22 +46,6 @@ export default function MediaPlannerCard(p: Props){
         onClick={() => p.onGoalChange(objective.value)}
       >
         {objective.label}
-      </button>
-    );
-  };
-
-  const platformChip = (platform: Platform) => {
-    const active = p.selectedPlatforms.includes(platform);
-    const label = PLATFORM_LABELS[platform] || platform;
-    return (
-      <button
-        key={platform}
-        type="button"
-        className={`planner-chip${active ? ' is-active' : ''}`}
-        aria-pressed={active}
-        onClick={() => p.onPlatformToggle(platform)}
-      >
-        {label}
       </button>
     );
   };
@@ -187,22 +161,6 @@ export default function MediaPlannerCard(p: Props){
           <span className="planner-hint">Adjusts auto budget split unless manual % is on.</span>
         </div>
 
-        <div>
-          <div className="planner-tag" id={platformsLabelId}>Platforms</div>
-          <div className="planner-chips" role="group" aria-labelledby={platformsLabelId}>
-            {p.platforms.map(platformChip)}
-          </div>
-        </div>
-
-        <div>
-          <div className="planner-tag">Live preview</div>
-          <SplitControlsRow
-            mode={p.mode}
-            includeAll={p.includeAll}
-            onChangeMode={p.onModeChange}
-            onIncludeAllChange={p.onIncludeAllChange}
-          />
-        </div>
       </div>
     </section>
   );

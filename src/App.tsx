@@ -24,6 +24,7 @@ import { CostOverridesCard } from './components/CostOverridesCard';
 import { FxManager } from './components/FxManager';
 import { hasRate } from './lib/fx';
 import MediaPlannerCard from './components/MediaPlannerCard';
+import ChannelsSplitsCard from './components/ChannelsSplitsCard';
 import { AnimatedCounter } from './components/ui/AnimatedCounter';
 
 const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GOOGLE_DISPLAY', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
@@ -49,7 +50,7 @@ function App() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(['FACEBOOK', 'GOOGLE_SEARCH']);
   const [manualSplit, setManualSplit] = useState(false);
   const [platformWeights, setPlatformWeights] = useState<Record<Platform, number>>({} as any);
-  const [includeAll, setIncludeAll] = useState(false);
+  const [enforceMinEach, setEnforceMinEach] = useState(false);
   const [manualCPL, setManualCPL] = useState(false);
   const [platformCPLs, setPlatformCPLs] = useState<Record<Platform, number>>({} as any);
   const [mode, setMode] = useState<'auto'|'manual'>(manualSplit ? 'manual' : 'auto');
@@ -83,7 +84,7 @@ function App() {
       if (savedState.selectedPlatforms !== undefined) setSelectedPlatforms(savedState.selectedPlatforms);
       if (savedState.manualSplit !== undefined) setManualSplit(savedState.manualSplit);
       if (savedState.platformWeights !== undefined) setPlatformWeights(savedState.platformWeights);
-      if (savedState.includeAll !== undefined) setIncludeAll(savedState.includeAll);
+      if (savedState.includeAll !== undefined) setEnforceMinEach(savedState.includeAll);
       if (savedState.manualCPL !== undefined) setManualCPL(savedState.manualCPL);
       if (savedState.platformCPLs !== undefined) setPlatformCPLs(savedState.platformCPLs);
     }
@@ -92,11 +93,6 @@ function App() {
   // Keep mode in sync with manualSplit
   useEffect(() => setMode(manualSplit ? 'manual' : 'auto'), [manualSplit]);
   useEffect(() => setManualSplit(mode === 'manual'), [mode]);
-
-  // When entering manual, auto helper must be off for clarity
-  useEffect(() => {
-    if (mode === 'manual' && includeAll) setIncludeAll(false);
-  }, [mode, includeAll]);
 
   const persistedState = useMemo<AppState>(() => ({
     totalBudget,
@@ -109,7 +105,7 @@ function App() {
     selectedPlatforms,
     manualSplit,
     platformWeights,
-    includeAll,
+    includeAll: manualSplit ? enforceMinEach : false,
     manualCPL,
     platformCPLs
   }), [
@@ -123,7 +119,7 @@ function App() {
     selectedPlatforms,
     manualSplit,
     platformWeights,
-    includeAll,
+    manualSplit ? enforceMinEach : false,
     manualCPL,
     platformCPLs
   ]);
@@ -156,7 +152,7 @@ function App() {
     revenuePerSale,
     manualSplit,
     platformWeights,
-    includeAll,
+    includeAll: manualSplit ? enforceMinEach : false,
     manualCPL,
     platformCPLs
   }), [
@@ -168,7 +164,7 @@ function App() {
     revenuePerSale,
     manualSplit,
     platformWeights,
-    includeAll,
+    manualSplit ? enforceMinEach : false,
     manualCPL,
     platformCPLs
   ]);
@@ -322,7 +318,7 @@ function App() {
   // Charts data (Budget Split)
   const selected = selectedPlatforms;
   const manualOn = manualSplit;
-  const includeAllMin10 = includeAll;
+  const includeAllMin10 = enforceMinEach;
   const manualPct: Record<string, number> = selected.reduce((acc, p) => {
     acc[p] = Math.max(0, platformWeights[p as Platform] ?? 0);
     return acc;
@@ -349,8 +345,10 @@ function App() {
 
   const centerValue = `${fmt(totals.budget || 0, 0)} ${currency}`;
   const centerLabel = manualOn
-    ? (manualSum === 100 ? 'Manual split' : `Manual split (normalized from ${Math.round(manualSum)}%)`)
-    : (includeAllMin10 ? 'Auto split (≥10% each)' : 'Auto split');
+    ? (manualSum === 100
+      ? (includeAllMin10 ? 'Manual split (min 10%)' : 'Manual split')
+      : `Manual split (normalized from ${Math.round(manualSum)}%)`)
+    : 'Auto split';
 
 
   const barsData = results.map(r => ({
@@ -452,10 +450,6 @@ function App() {
                 niche={niche}
                 leadToSale={leadToSalePercent}
                 revenuePerSale={revenuePerSale}
-                platforms={ALL_PLATFORMS}
-                selectedPlatforms={selectedPlatforms}
-                mode={mode}
-                includeAll={includeAll}
                 onTotalBudgetChange={setTotalBudget}
                 onCurrencyChange={setCurrency}
                 onMarketChange={setMarket}
@@ -463,16 +457,25 @@ function App() {
                 onNicheChange={handleNicheChange}
                 onLeadToSaleChange={setLeadToSalePercent}
                 onRevenuePerSaleChange={setRevenuePerSale}
-                onPlatformToggle={(platform) => {
-                  if (selectedPlatforms.includes(platform)) {
-                    setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform));
-                  } else {
-                    setSelectedPlatforms([...selectedPlatforms, platform]);
-                  }
-                }}
-                onModeChange={setMode}
-                onIncludeAllChange={setIncludeAll}
                 nicheOptions={Object.keys(NICHE_DEFAULTS)}
+              />
+              <ChannelsSplitsCard
+                platforms={ALL_PLATFORMS}
+                selectedPlatforms={selectedPlatforms}
+                platformWeights={platformWeights}
+                setPlatformWeights={setPlatformWeights}
+                mode={mode}
+                onModeChange={setMode}
+                enforceMinEach={enforceMinEach}
+                onEnforceMinEachChange={setEnforceMinEach}
+                onPlatformToggle={(platform) => {
+                  setSelectedPlatforms((prev) => {
+                    if (prev.includes(platform)) {
+                      return prev.filter((p) => p !== platform);
+                    }
+                    return [...prev, platform];
+                  });
+                }}
               />
             </motion.div>
           </motion.div>

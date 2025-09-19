@@ -20,7 +20,7 @@ export function normalizeToUnit(weights: Record<string, number>, keys: string[])
 // - selected: platform codes to include (e.g., ['FACEBOOK','INSTAGRAM',...])
 // - manualOn: if true, use "manualPct" (0..100 per selected)
 // - autoWeights: your existing auto weights (0..1 per platform)
-// - includeAllMin10: only applied in auto mode; enforce >=10% then renormalize
+// - includeAllMin10: when true, clamp manual entries to ≥10% and enforce ≥10% in auto mode
 export function deriveDisplayWeights(
   selected: string[],
   manualOn: boolean,
@@ -31,14 +31,17 @@ export function deriveDisplayWeights(
 
   if (manualOn) {
     const pct: Record<string, number> = {};
+    const adjusted: Record<string, number> = {};
     let sum = 0;
+    const minEach = includeAllMin10 ? 10 : 0;
     selected.forEach(k => {
       const v = Math.max(0, manualPct[k] ?? 0);
       pct[k] = v;
+      adjusted[k] = includeAllMin10 ? Math.max(minEach, v) : v;
       sum += v;
     });
     // Normalize (handles sum 0 by equal split)
-    const weights = normalizeToUnit(pct, selected);
+    const weights = normalizeToUnit(adjusted, selected);
     return { weights, manualSum: sum };
   }
 

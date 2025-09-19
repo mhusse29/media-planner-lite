@@ -47,7 +47,11 @@ export function calculatePlatformWeights(
     const manualValues = selectedPlatforms.map(
       (platform) => Math.max(0, manualWeights[platform] ?? 0)
     );
-    const total = manualValues.reduce((sum, weight) => sum + weight, 0);
+    const minEach = includeAll ? 10 : 0;
+    const adjustedValues = includeAll
+      ? manualValues.map((value) => Math.max(minEach, value))
+      : manualValues;
+    const total = adjustedValues.reduce((sum, weight) => sum + weight, 0);
     const normalized: Record<Platform, number> = {} as any;
 
     if (total <= 0) {
@@ -66,7 +70,7 @@ export function calculatePlatformWeights(
     }
 
     selectedPlatforms.forEach((platform, index) => {
-      normalized[platform] = manualValues[index] / total;
+      normalized[platform] = adjustedValues[index] / total;
     });
 
     return normalized;
