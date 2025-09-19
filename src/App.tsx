@@ -1,7 +1,7 @@
 import './styles/theme.css'
 import './styles/charts.css'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { motion, useInView, useReducedMotion, cubicBezier } from 'framer-motion';
 import type { Platform, Goal, Market, Currency } from './lib/assumptions';
 import { NICHE_DEFAULTS } from './lib/assumptions';
 import { calculateResults, calculateTotals } from './lib/math';
@@ -264,10 +264,15 @@ function App() {
     return () => document.body.classList.remove('planner-in');
   }, [plannerInView]);
 
+  const baseEase = useMemo(() => cubicBezier(0.4, 0, 0.2, 1), []);
+  const baseTransition = useMemo(() => ({ duration: 0.28, ease: baseEase }), [baseEase]);
+
   const heroVariants = useMemo(() => ({
     hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } },
-  }), [prefersReducedMotion]);
+    visible: prefersReducedMotion
+      ? { opacity: 1, y: 0 }
+      : { opacity: 1, y: 0, transition: baseTransition },
+  }), [prefersReducedMotion, baseTransition]);
 
   const gridVariants = useMemo(() => (
     prefersReducedMotion
@@ -277,8 +282,10 @@ function App() {
 
   const itemVariants = useMemo(() => ({
     hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } },
-  }), [prefersReducedMotion]);
+    visible: prefersReducedMotion
+      ? { opacity: 1, y: 0 }
+      : { opacity: 1, y: 0, transition: baseTransition },
+  }), [prefersReducedMotion, baseTransition]);
 
   const scrollToSection = useCallback((id: string) => {
     if (typeof document === 'undefined') return;
