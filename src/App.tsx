@@ -287,17 +287,6 @@ function App() {
       : { opacity: 1, y: 0, transition: baseTransition },
   }), [prefersReducedMotion, baseTransition]);
 
-  const scrollToSection = useCallback((id: string) => {
-    if (typeof document === 'undefined') return;
-    const node = document.getElementById(id);
-    if (node) {
-      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
-
-  const scrollToResults = useCallback(() => scrollToSection('results-section'), [scrollToSection]);
-  const scrollToAdvanced = useCallback(() => scrollToSection('advanced-planner'), [scrollToSection]);
-
   // Prepare data for charts and table
   const rowsFmt = results.map(r => ({
     platform: r.platform,
@@ -446,36 +435,6 @@ function App() {
           animate="visible"
         >
           <motion.div className="planner-grid" variants={gridVariants}>
-            <motion.div className="planner-copy" variants={itemVariants}>
-              <span className="planner-tag">Live preview</span>
-              <h2 className="planner-heading">Plan a sample campaign</h2>
-              <p className="planner-subcopy">
-                Tune budgets, objectives, and assumptions to watch cross-channel performance update instantly.
-              </p>
-              <p className="planner-note">
-                Numbers refresh in real time as you edit inputs. Scroll for full results or jump into advanced controls.
-              </p>
-              <div className="planner-cta">
-                <motion.button
-                  type="button"
-                  className="planner-btn planner-btn-primary"
-                  onClick={scrollToResults}
-                  whileHover={prefersReducedMotion ? undefined : { y: -1 }}
-                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-                >
-                  See full results →
-                </motion.button>
-                <motion.button
-                  type="button"
-                  className="planner-btn planner-link"
-                  onClick={scrollToAdvanced}
-                  whileHover={prefersReducedMotion ? undefined : { y: -1 }}
-                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-                >
-                  Open advanced planner →
-                </motion.button>
-              </div>
-            </motion.div>
             <motion.div className="planner-card-wrap" variants={itemVariants}>
               <MediaPlannerCard
                 totalBudget={totalBudget}
@@ -514,9 +473,16 @@ function App() {
         <section id="results-section" className="section">
           <div className="container flex flex-col gap-8">
             {results.length > 0 && (
-              <div className="max-w-3xl">
-                <KpiCards totals={totals} currency={currency} />
-              </div>
+              <KpiCards
+                totals={totals}
+                currency={currency}
+                mode={mode}
+                onModeChange={setMode}
+                includeAll={includeAll}
+                onIncludeAllChange={setIncludeAll}
+                manualCpl={manualCPL}
+                onManualCplChange={setManualCPL}
+              />
             )}
             <div className="grid gap-6 lg:grid-cols-2">
               <BudgetDonutPro
@@ -553,27 +519,38 @@ function App() {
               </p>
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
-              <AllocationCard
-                selected={selectedPlatforms as unknown as string[]}
-                names={platformNames}
-                mode={mode}
-                pctMap={selectedPlatforms.reduce((acc, p)=>{ acc[p]= Math.max(0, platformWeights[p]??0); return acc; }, {} as Record<string,number>)}
-                setPctMap={(next)=>{
-                  const updated = { ...platformWeights } as Record<Platform, number>;
-                  (Object.keys(next) as string[]).forEach(k=>{ updated[k as Platform] = Math.max(0, Number((next as any)[k])||0); });
-                  setPlatformWeights(updated);
-                }}
-              />
-              <CostOverridesCard
-                selected={selectedPlatforms as unknown as string[]}
-                names={platformNames}
-                currency={currency}
-                manualCpl={manualCPL}
-                setManualCpl={setManualCPL}
-                cplMap={platformCPLs as unknown as Record<string, number>}
-                setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
-              />
+              {mode === 'manual' && (
+                <AllocationCard
+                  selected={selectedPlatforms as unknown as string[]}
+                  names={platformNames}
+                  mode={mode}
+                  pctMap={selectedPlatforms.reduce((acc, p)=>{ acc[p]= Math.max(0, platformWeights[p]??0); return acc; }, {} as Record<string,number>)}
+                  setPctMap={(next)=>{
+                    const updated = { ...platformWeights } as Record<Platform, number>;
+                    (Object.keys(next) as string[]).forEach(k=>{ updated[k as Platform] = Math.max(0, Number((next as any)[k])||0); });
+                    setPlatformWeights(updated);
+                  }}
+                />
+              )}
+              {manualCPL && (
+                <CostOverridesCard
+                  selected={selectedPlatforms as unknown as string[]}
+                  names={platformNames}
+                  currency={currency}
+                  manualCpl={manualCPL}
+                  cplMap={platformCPLs as unknown as Record<string, number>}
+                  setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
+                />
+              )}
             </div>
+            {mode !== 'manual' && !manualCPL && (
+              <div className="rowCard" role="status">
+                <div>
+                  <div className="title">Manual controls are off</div>
+                  <div className="sub">Use the KPI summary toggles above to enable manual split or CPL overrides when needed.</div>
+                </div>
+              </div>
+            )}
             {!fxOk && (
               <div className="rowCard warn">
                 <div>
@@ -601,7 +578,27 @@ function App() {
 
 
 // KPI Cards Component
-function KpiCards({ totals, currency }: { totals: any; currency: string }) {
+type KpiCardsProps = {
+  totals: any;
+  currency: string;
+  mode: 'auto' | 'manual';
+  onModeChange: (mode: 'auto' | 'manual') => void;
+  includeAll: boolean;
+  onIncludeAllChange: (value: boolean) => void;
+  manualCpl: boolean;
+  onManualCplChange: (value: boolean) => void;
+};
+
+function KpiCards({
+  totals,
+  currency,
+  mode,
+  onModeChange,
+  includeAll,
+  onIncludeAllChange,
+  manualCpl,
+  onManualCplChange,
+}: KpiCardsProps) {
   const budget = typeof totals?.budget === 'number' ? totals.budget : null;
   const reach = typeof totals?.reach === 'number' ? totals.reach : null;
   const cpl = typeof totals?.cpl === 'number' ? totals.cpl : null;
@@ -654,6 +651,66 @@ function KpiCards({ totals, currency }: { totals: any; currency: string }) {
             formatter={(value) => `${value.toFixed(2)}x`}
             className="kpi-value"
           />
+        </div>
+        <div className="kpi-row kpi-row--controls">
+          <div className="kpi-label">
+            <span className="kpi-dot kpi-dot--split" />
+            <span>Budget split</span>
+          </div>
+          <div className="kpi-control">
+            <div className="kpi-segment" role="group" aria-label="Budget split mode">
+              <button
+                type="button"
+                className={mode === 'auto' ? 'is-active' : ''}
+                onClick={() => onModeChange('auto')}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                className={mode === 'manual' ? 'is-active' : ''}
+                onClick={() => onModeChange('manual')}
+              >
+                Manual
+              </button>
+            </div>
+            <label
+              className={`kpi-switch${mode !== 'auto' ? ' is-disabled' : ''}`}
+              title="Give every selected platform at least 10% of the budget in auto mode"
+            >
+              <input
+                type="checkbox"
+                checked={includeAll}
+                onChange={(event) => onIncludeAllChange(event.target.checked)}
+                disabled={mode !== 'auto'}
+              />
+              <span className="kpi-switch__track">
+                <span className="kpi-switch__thumb" />
+              </span>
+              <span className="kpi-switch__label">Min 10% each</span>
+            </label>
+          </div>
+        </div>
+        <div className="kpi-row kpi-row--controls">
+          <div className="kpi-label">
+            <span className="kpi-dot kpi-dot--cpl" />
+            <span>CPL mode</span>
+          </div>
+          <div className="kpi-control">
+            <label className="kpi-switch" title="Toggle manual CPL overrides">
+              <input
+                type="checkbox"
+                checked={manualCpl}
+                onChange={(event) => onManualCplChange(event.target.checked)}
+              />
+              <span className="kpi-switch__track">
+                <span className="kpi-switch__thumb" />
+              </span>
+              <span className="kpi-switch__label">
+                {manualCpl ? 'Manual per platform' : 'Auto (model)'}
+              </span>
+            </label>
+          </div>
         </div>
       </div>
     </section>

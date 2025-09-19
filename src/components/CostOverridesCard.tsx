@@ -4,27 +4,21 @@ type CPLs = Record<string, number>;
 
 export function CostOverridesCard({
   selected, names, currency,
-  manualCpl, setManualCpl,
+  manualCpl,
   cplMap, setCplMap
 }:{
   selected: string[];
   names: Record<string,string>;
   currency: string;
-  manualCpl: boolean; setManualCpl: (v:boolean)=>void;
+  manualCpl: boolean;
   cplMap: CPLs; setCplMap: (v:CPLs)=>void;
 }){
   const setVal=(k:string,v:number)=> setCplMap({...cplMap,[k]:Math.max(0,v||0)});
   const clear=()=>{ const n:CPLs={}; selected.forEach(k=>n[k]=0); setCplMap(n); };
 
-  const actions = (
-    <>
-      <label className="switch" style={{marginRight:8}} title="Enable manual CPL per platform">
-        <input type="checkbox" checked={manualCpl} onChange={e=>setManualCpl(e.target.checked)} />
-        <span className="slider" />
-      </label>
-      {manualCpl && <button className="secBtn" onClick={clear}>Clear</button>}
-    </>
-  );
+  const actions = manualCpl ? (
+    <button className="secBtn" onClick={clear}>Clear</button>
+  ) : null;
 
   return (
     <SectionCard
@@ -33,7 +27,7 @@ export function CostOverridesCard({
       sub={manualCpl ? "Override lead cost per platform" : "Use model defaults"}
       actions={actions}
     >
-      {manualCpl ? (
+      {manualCpl && (
         <div className="grid2">
           {selected.map(k=>(
             <div className="fieldRow" key={k}>
@@ -44,13 +38,6 @@ export function CostOverridesCard({
               </div>
             </div>
           ))}
-        </div>
-      ) : (
-        <div className="rowCard">
-          <div>
-            <div className="title">Auto CPL is ON</div>
-            <div className="sub">Turn on manual CPL to override per-platform cost of lead.</div>
-          </div>
         </div>
       )}
     </SectionCard>
