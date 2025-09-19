@@ -5,8 +5,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Use root for local dev, repo name for GitHub Pages
-  base: process.env.NODE_ENV === 'production' ? '/media-planner-lite/' : '/',
+  // Serve from root in development and use relative paths in production so builds
+  // work whether they're deployed at the domain root or a sub-path.
+  base: process.env.NODE_ENV === 'production' ? './' : '/',
   test: {
     globals: true,
     environment: 'jsdom',
