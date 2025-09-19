@@ -520,6 +520,11 @@ function App() {
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
               {mode === 'manual' && (
+                // Conflict resolution:
+                // - Base branch rendered AllocationCard regardless of mode so power users always saw the sliders.
+                // - Feature branch hid it in auto mode to let the KPI glass card take over the hero width.
+                // We keep the conditional rendering but pair it with the helper row below so auto-mode users still get
+                // guidance on where to re-enable manual controls.
                 <AllocationCard
                   selected={selectedPlatforms as unknown as string[]}
                   names={platformNames}
@@ -532,16 +537,17 @@ function App() {
                   }}
                 />
               )}
-              {manualCPL && (
-                <CostOverridesCard
-                  selected={selectedPlatforms as unknown as string[]}
-                  names={platformNames}
-                  currency={currency}
-                  manualCpl={manualCPL}
-                  cplMap={platformCPLs as unknown as Record<string, number>}
-                  setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
-                />
-              )}
+              {/* Conflict resolution: base branch always rendered the CPL overrides card while feature branch hid it when auto.
+                  Leaving it mounted preserves the base discoverability while the component now shows guidance when auto CPL is active. */}
+              <CostOverridesCard
+                selected={selectedPlatforms as unknown as string[]}
+                names={platformNames}
+                currency={currency}
+                manualCpl={manualCPL}
+                onManualCplChange={setManualCPL}
+                cplMap={platformCPLs as unknown as Record<string, number>}
+                setCplMap={(next)=> setPlatformCPLs(next as Record<Platform, number>)}
+              />
             </div>
             {mode !== 'manual' && !manualCPL && (
               <div className="rowCard" role="status">
@@ -697,6 +703,10 @@ function KpiCards({
             <span>CPL mode</span>
           </div>
           <div className="kpi-control">
+            {/* Conflict resolution:
+                Base branch owned the manual CPL switch inside CostOverridesCard.
+                Feature branch moved it up so CPL + split toggles share the KPI styling.
+                Keeping it here centralizes manual controls while CostOverridesCard now links back when auto mode is active. */}
             <label className="kpi-switch" title="Toggle manual CPL overrides">
               <input
                 type="checkbox"
