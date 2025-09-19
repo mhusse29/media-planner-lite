@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState, useId, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useState, useId, useRef, type Dispatch, type SetStateAction } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { Platform } from '../lib/assumptions';
-import { PLATFORM_LABELS } from '../lib/utils';
+import { ChevronDown } from 'lucide-react';
+import type { Currency, Platform } from '../lib/assumptions';
+import { PLATFORM_LABELS, cn } from '../lib/utils';
 import { Tooltip } from './ui/Tooltip';
 import { PlatformGlyph } from './PlatformGlyph';
+import { Card, microTitleClass } from './ui/Card';
 
 const PLATFORM_SUMMARY_CODES: Record<Platform, string> = {
   FACEBOOK: 'FB',
@@ -27,6 +29,10 @@ type Props = {
   enforceMinEach: boolean;
   onEnforceMinEachChange: (value: boolean) => void;
   onPlatformToggle: (platform: Platform) => void;
+  currency: Currency;
+  manualCpl: boolean;
+  platformCPLs: Record<Platform, number>;
+  setPlatformCPLs: Dispatch<SetStateAction<Record<Platform, number>>>;
 };
 
 function clampPercent(value: number) {
@@ -90,7 +96,7 @@ function normalizeWithMinimum(
   keys.forEach((key) => {
     base[key] = minEach;
   });
-  let remainder = 100 - minEach * count;
+  const remainder = 100 - minEach * count;
   if (remainder <= 0) {
     return roundToIntegers(base, minEach);
   }
@@ -127,7 +133,7 @@ function roundToIntegers(map: Record<Platform, number>, minEach: number) {
       frac: value - floor,
     };
   });
-  let total = items.reduce((sum, item) => sum + item.floor, 0);
+  const total = items.reduce((sum, item) => sum + item.floor, 0);
   let remainder = 100 - total;
   if (remainder > 0) {
     items.sort((a, b) => b.frac - a.frac);
@@ -154,7 +160,7 @@ function roundToIntegers(map: Record<Platform, number>, minEach: number) {
   items.forEach((item) => {
     result[item.key] = item.floor;
   });
-  let sum = Object.values(result).reduce((acc, value) => acc + value, 0);
+  const sum = Object.values(result).reduce((acc, value) => acc + value, 0);
   if (sum !== 100 && items.length > 0) {
     const diff = 100 - sum;
     const direction = diff > 0 ? 1 : -1;
@@ -187,12 +193,19 @@ export function ChannelsSplitsCard({
   enforceMinEach,
   onEnforceMinEachChange,
   onPlatformToggle,
+  currency,
+  manualCpl,
+  platformCPLs,
+  setPlatformCPLs,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const minEach = enforceMinEach ? 10 : 0;
   const selectedCount = selectedPlatforms.length;
   const titleId = useId();
   const drawerId = `${titleId}-drawer`;
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     if (mode !== 'manual' || selectedCount === 0) {
@@ -206,6 +219,18 @@ export function ChannelsSplitsCard({
     }
   }, [mode, selectedCount, onModeChange]);
 
+  useEffect(() => {
+    if (drawerOpen) {
+      const focusable = drawerRef.current?.querySelector<HTMLElement>(
+        'input,button,select,textarea,[tabindex]:not([tabindex="-1"])'
+      );
+      focusable?.focus();
+    } else if (wasOpenRef.current) {
+      triggerRef.current?.focus();
+    }
+    wasOpenRef.current = drawerOpen;
+  }, [drawerOpen]);
+
   const sum = useMemo(
     () =>
       selectedPlatforms.reduce(
@@ -217,14 +242,17 @@ export function ChannelsSplitsCard({
 
   const summaryLabel = useMemo(() => {
     if (mode !== 'manual' || selectedCount === 0) return '';
-    if (!drawerOpen && sum === 0) return 'Splits: —';
+    if (sum === 0) return 'Splits: —';
     const parts = selectedPlatforms.map((platform) => {
       const value = Math.max(0, platformWeights[platform] ?? 0);
-      const code = PLATFORM_SUMMARY_CODES[platform] || PLATFORM_LABELS[platform] || platform;
-      return `${code} ${Math.round(value)}`;
+      const code =
+        PLATFORM_SUMMARY_CODES[platform] ||
+        PLATFORM_LABELS[platform] ||
+        platform;
+      return `${code} ${Math.round(value)}%`;
     });
     return `Splits: ${parts.join(' • ')}`;
-  }, [drawerOpen, mode, platformWeights, selectedCount, selectedPlatforms, sum]);
+  }, [mode, platformWeights, selectedCount, selectedPlatforms, sum]);
 
   const minViolation = enforceMinEach
     ? selectedPlatforms.some((platform) => (platformWeights[platform] ?? 0) < 10)
@@ -240,6 +268,23 @@ export function ChannelsSplitsCard({
       ...prev,
       [platform]: value,
     }));
+  };
+
+  const updateCpl = (platform: Platform, raw: string) => {
+    setPlatformCPLs((prev) => {
+      const next = { ...prev } as Record<Platform, number>;
+      if (!raw) {
+        delete next[platform];
+        return next;
+      }
+      const value = Number(raw);
+      if (!Number.isFinite(value) || value < 0) {
+        delete next[platform];
+        return next;
+      }
+      next[platform] = value;
+      return next;
+    });
   };
 
   const applyDistribution = (distribution: Record<Platform, number>) => {
@@ -262,7 +307,11 @@ export function ChannelsSplitsCard({
 
   const normalize = () => {
     if (!selectedCount) return;
-    const distribution = normalizeWithMinimum(platformWeights, selectedPlatforms, minEach);
+    const distribution = normalizeWithMinimum(
+      platformWeights,
+      selectedPlatforms,
+      minEach
+    );
     applyDistribution(distribution);
   };
 
@@ -282,28 +331,42 @@ export function ChannelsSplitsCard({
   };
 
   const disabledManual = selectedCount === 0;
-  const helperText = mode === 'auto' ? 'Auto allocates by model CPL.' : 'Adjust % per channel.';
+  const helperText =
+    mode === 'auto' ? 'Auto allocates by model CPL.' : 'Adjust % per channel.';
+  const openManual = mode === 'manual' && selectedCount > 0;
+
+  const pillButtonClass =
+    'inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-medium text-white/70 ring-1 ring-white/10 transition-colors duration-200 hover:ring-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-40 disabled:cursor-not-allowed';
 
   return (
-    <section className="channels-card" aria-labelledby={`${titleId}-title`}>
-      <header className="channels-card__head">
-        <div className="channels-card__meta">
-          <span id={`${titleId}-title`} className="channels-card__title">Channels &amp; Splits</span>
-          <span className="channels-card__sub">Pick channels and (optional) edit manual splits.</span>
-        </div>
+    <Card aria-labelledby={`${titleId}-title`}>
+      <header className="space-y-1">
+        <span id={`${titleId}-title`} className={microTitleClass}>
+          Channels &amp; Splits
+        </span>
+        <p className="text-[13px] text-white/70">
+          Pick channels and (optional) edit manual splits.
+        </p>
       </header>
-      <div className="channels-card__body">
-        <div className="channels-row">
-          <span className="channels-row__label">CHANNELS</span>
-          <div className="channels-pill-grid" role="group" aria-label="Select channels">
+
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50">
+            Channels
+          </span>
+          <div className="flex flex-wrap gap-2 md:gap-3" role="group" aria-label="Select channels">
             {platforms.map((platform) => {
               const active = selectedPlatforms.includes(platform);
               return (
                 <Tooltip key={platform} content={PLATFORM_LABELS[platform] || platform}>
                   <button
                     type="button"
-                    className={`channel-pill${active ? ' is-active' : ''}`}
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-full bg-surface-3 text-white/70 ring-1 ring-white/10 transition-colors duration-200 hover:ring-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+                      active && 'bg-brand/10 text-brand-100 ring-brand/30'
+                    )}
                     aria-pressed={active}
+                    aria-label={PLATFORM_LABELS[platform] || platform}
                     onClick={() => onPlatformToggle(platform)}
                   >
                     <PlatformGlyph platform={platform} />
@@ -314,144 +377,233 @@ export function ChannelsSplitsCard({
           </div>
         </div>
 
-        <div className="channels-row channels-row--mode">
-          <div className="channels-mode">
-            <span className="channels-row__label">MODE</span>
-            <div className="channels-seg" role="group" aria-label="Allocation mode">
-              <button
-                type="button"
-                className={mode === 'auto' ? 'is-active' : ''}
-                onClick={() => handleModeChange('auto')}
-              >
-                Auto
-              </button>
-              <button
-                type="button"
-                className={mode === 'manual' ? 'is-active' : ''}
-                onClick={() => handleModeChange('manual')}
-                disabled={disabledManual}
-              >
-                Manual
-              </button>
+        <div className="space-y-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50">
+            Mode
+          </span>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <div className="inline-flex h-9 items-center rounded-full bg-surface-3/70 p-1 ring-1 ring-white/10">
+                <button
+                  type="button"
+                  className={cn(
+                    'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium text-white/70 transition-colors duration-200',
+                    mode === 'auto' && 'bg-brand/10 text-brand-100 shadow-[0_0_0_1px_rgba(107,112,255,0.24)]'
+                  )}
+                  onClick={() => handleModeChange('auto')}
+                >
+                  Auto
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium text-white/70 transition-colors duration-200',
+                    mode === 'manual' && 'bg-brand/10 text-brand-100 shadow-[0_0_0_1px_rgba(107,112,255,0.24)]',
+                    disabledManual && 'opacity-40'
+                  )}
+                  onClick={() => handleModeChange('manual')}
+                  disabled={disabledManual}
+                >
+                  Manual
+                </button>
+              </div>
+              <p className="text-[12px] text-white/60">{helperText}</p>
             </div>
-            <p className="channels-helper">{helperText}</p>
             {disabledManual && (
-              <p className="channels-hint">Select at least one channel.</p>
+              <p className="text-[12px] text-amber-300">Select at least one channel.</p>
             )}
           </div>
         </div>
 
-        {mode === 'manual' && selectedCount > 0 && (
-          <div className="channels-row channels-row--splits">
-            <button
-              type="button"
-              className={`channels-split-trigger${drawerOpen ? ' is-open' : ''}`}
-              onClick={toggleDrawer}
-              aria-expanded={drawerOpen}
-              aria-controls={drawerId}
-            >
-              <span>Splits</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M4.47 6.47a.75.75 0 0 1 1.06 0L8 8.94l2.47-2.47a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 0-1.06z"
-                  fill="currentColor"
+        {openManual && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                ref={triggerRef}
+                type="button"
+                className={cn(
+                  pillButtonClass,
+                  'items-center',
+                  drawerOpen && 'bg-brand/10 text-brand-100 ring-brand/30'
+                )}
+                onClick={toggleDrawer}
+                aria-expanded={drawerOpen}
+                aria-controls={drawerId}
+              >
+                Splits
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 transition-transform duration-200',
+                    drawerOpen && '-rotate-180'
+                  )}
                 />
-              </svg>
-            </button>
-            {!drawerOpen && (
-              <span className="channels-summary" aria-live="polite">{summaryLabel}</span>
-            )}
+              </button>
+              {!drawerOpen && summaryLabel && (
+                <span
+                  className="inline-flex h-8 items-center rounded-full bg-surface-3/70 px-3 text-xs text-white/70 ring-1 ring-white/10"
+                  aria-live="polite"
+                >
+                  {summaryLabel}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
         <AnimatePresence initial={false}>
-          {mode === 'manual' && selectedCount > 0 && drawerOpen && (
+          {openManual && drawerOpen && (
             <motion.div
+              ref={drawerRef}
+              key="splits-drawer"
               id={drawerId}
-              className="channels-drawer"
+              className="overflow-hidden rounded-2xl border border-white/10 bg-surface-3/70 p-4"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div className="channels-drawer__grid">
-                {selectedPlatforms.map((platform) => {
-                  const value = Math.max(0, platformWeights[platform] ?? 0);
-                  return (
-                    <div key={platform} className="channels-slider-row">
-                      <div className="channels-slider__label">
-                        <PlatformGlyph platform={platform} />
-                        <span>{PLATFORM_LABELS[platform] || platform}</span>
-                      </div>
-                      <div className="channels-slider__controls">
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={value}
-                          onChange={(event) => updateValue(platform, Number(event.target.value))}
-                          aria-label={`${PLATFORM_LABELS[platform] || platform} split`}
-                        />
-                        <div className="channels-slider__input">
+              <div className="space-y-4">
+                <div className="grid gap-3">
+                  {selectedPlatforms.map((platform) => {
+                    const value = Math.max(0, platformWeights[platform] ?? 0);
+                    const cplValue = platformCPLs[platform];
+                    return (
+                      <div
+                        key={platform}
+                        className="grid gap-3 rounded-2xl bg-surface-2/60 p-3 ring-1 ring-white/5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_90px_150px]"
+                      >
+                        <div className="flex items-center gap-2 text-sm font-medium text-white/80">
+                          <PlatformGlyph platform={platform} />
+                          <span>{PLATFORM_LABELS[platform] || platform}</span>
+                        </div>
+                        <div className="flex items-center">
                           <input
-                            type="number"
+                            type="range"
                             min={0}
                             max={100}
                             step={1}
                             value={value}
-                            onChange={(event) => updateValue(platform, Number(event.target.value))}
-                            aria-label={`${PLATFORM_LABELS[platform] || platform} percent`}
+                            onChange={(event) =>
+                              updateValue(platform, Number(event.target.value))
+                            }
+                            aria-label={`${PLATFORM_LABELS[platform] || platform} split`}
+                            className="h-1.5 w-full accent-brand"
                           />
-                          <span>%</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="flex h-9 w-full items-center justify-between rounded-xl bg-surface-2/80 px-3 text-sm text-white/80 ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand/40">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={Number.isFinite(value) ? value : 0}
+                              onChange={(event) =>
+                                updateValue(platform, Number(event.target.value))
+                              }
+                              aria-label={`${PLATFORM_LABELS[platform] || platform} percent`}
+                              className="w-full bg-transparent text-right outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            />
+                            <span className="text-xs text-white/50">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <div
+                            className={cn(
+                              'flex h-9 w-full items-center gap-2 rounded-xl bg-surface-2/80 px-3 text-sm ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand/40',
+                              manualCpl ? 'text-white/80' : 'text-white/40'
+                            )}
+                          >
+                            <span className="text-xs font-semibold uppercase text-white/50">
+                              {currency}
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={Number.isFinite(cplValue) ? cplValue : ''}
+                              onChange={(event) =>
+                                updateCpl(platform, event.target.value)
+                              }
+                              placeholder="Auto"
+                              aria-label={`${PLATFORM_LABELS[platform] || platform} CPL override`}
+                              className="w-full bg-transparent text-right outline-none placeholder:text-white/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:text-white/40"
+                              disabled={!manualCpl}
+                            />
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                {!manualCpl && (
+                  <p className="text-[12px] text-white/50">
+                    CPL overrides follow model defaults until Manual CPL is enabled.
+                  </p>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex w-full flex-col gap-2 text-xs text-white/70 sm:w-auto',
+                      sum !== 100 && 'text-amber-300'
+                    )}
+                  >
+                    <span className="font-semibold">Sum: {sum}%</span>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10 sm:w-40">
+                      <div
+                        className={cn(
+                          'h-full rounded-full bg-brand',
+                          sum !== 100 && 'bg-amber-300'
+                        )}
+                        style={{ width: `${Math.max(0, Math.min(100, sum))}%` }}
+                      />
                     </div>
-                  );
-                })}
-              </div>
-
-              <div className="channels-drawer__footer">
-                <div className={`channels-sum${sum === 100 ? '' : ' is-warn'}`}>
-                  <span>Sum: {sum}%</span>
-                  <div className="channels-sum__bar">
-                    <div
-                      className="channels-sum__fill"
-                      style={{ width: `${Math.max(0, Math.min(100, sum))}%` }}
-                    />
                   </div>
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                    <button type="button" className={pillButtonClass} onClick={equalize} disabled={!selectedCount}>
+                      Equal split
+                    </button>
+                    <button type="button" className={pillButtonClass} onClick={normalize} disabled={!selectedCount}>
+                      Normalize
+                    </button>
+                    <button type="button" className={pillButtonClass} onClick={clear} disabled={!selectedCount}>
+                      Clear
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className={cn(
+                      pillButtonClass,
+                      enforceMinEach && 'bg-brand/10 text-brand-100 ring-brand/30'
+                    )}
+                    onClick={() => onEnforceMinEachChange(!enforceMinEach)}
+                    aria-pressed={enforceMinEach}
+                  >
+                    <span className="relative flex h-3 w-3 items-center justify-center">
+                      <span
+                        className={cn(
+                          'h-2 w-2 rounded-full bg-brand transition-opacity',
+                          enforceMinEach ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                    </span>
+                    Min 10% each
+                  </button>
                 </div>
-                <div className="channels-drawer__actions">
-                  <button type="button" onClick={equalize} disabled={!selectedCount}>
-                    Equal split
-                  </button>
-                  <button type="button" onClick={normalize} disabled={!selectedCount}>
-                    Normalize
-                  </button>
-                  <button type="button" onClick={clear} disabled={!selectedCount}>
-                    Clear
-                  </button>
-                </div>
-                <label className="channels-min-toggle">
-                  <input
-                    type="checkbox"
-                    checked={enforceMinEach}
-                    onChange={(event) => onEnforceMinEachChange(event.target.checked)}
-                  />
-                  <span>Min 10% each</span>
-                </label>
-              </div>
 
-              {minViolation && (
-                <p className="channels-error" role="alert">
-                  Raise each channel to at least 10% when Min 10% each is on.
-                </p>
-              )}
+                {minViolation && (
+                  <p className="text-[12px] text-rose-300" role="alert">
+                    Raise each channel to at least 10% when Min 10% each is on.
+                  </p>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-    </section>
+    </Card>
   );
 }
 

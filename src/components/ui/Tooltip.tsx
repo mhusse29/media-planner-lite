@@ -33,7 +33,7 @@ export function Tooltip({ content, side = "top", maxWidth = 280, children }: Pro
         flip = true;
       }
       // Clamp horizontally inside viewport
-      let left = Math.min(Math.max(8, r.left), window.innerWidth - maxWidth - 8);
+      const left = Math.min(Math.max(8, r.left), window.innerWidth - maxWidth - 8);
 
       setPos({ top, left, flip });
     };

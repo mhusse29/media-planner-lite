@@ -11,7 +11,7 @@ import type { ExportPayload } from './export';
 import type { AppState } from './lib/storage';
 import { saveState, loadState } from './lib/storage';
 import { Download, Settings } from 'lucide-react';
-import { PLATFORM_LABELS, formatNumber, formatCurrency } from './lib/utils';
+import { PLATFORM_LABELS, formatNumber, formatCurrency, cn } from './lib/utils';
 import { BudgetDonutPro, ImpressionsBarsPro } from './components/ChartsPro';
 import ResultsByPlatformCard from './components/ResultsByPlatformCard';
 import ColumnsDialog from './components/ColumnsDialog';
@@ -26,6 +26,7 @@ import { hasRate } from './lib/fx';
 import MediaPlannerCard from './components/MediaPlannerCard';
 import ChannelsSplitsCard from './components/ChannelsSplitsCard';
 import { AnimatedCounter } from './components/ui/AnimatedCounter';
+import { Card, microTitleClass } from './components/ui/Card';
 
 const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GOOGLE_DISPLAY', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'];
 const PLATFORM_NAME_MAP: Record<string, string> = Object.fromEntries(
@@ -476,6 +477,10 @@ function App() {
                     return [...prev, platform];
                   });
                 }}
+                currency={currency}
+                manualCpl={manualCPL}
+                platformCPLs={platformCPLs}
+                setPlatformCPLs={setPlatformCPLs}
               />
             </motion.div>
           </motion.div>
@@ -581,75 +586,97 @@ function KpiCards({
   const reach = typeof totals?.reach === 'number' ? totals.reach : null;
   const cpl = typeof totals?.cpl === 'number' ? totals.cpl : null;
   const roas = typeof totals?.roas === 'number' ? totals.roas : null;
-  const statusTitle = manualCpl ? 'Manual CPL per platform' : 'Auto CPL is ON';
-  const statusSub = manualCpl
-    ? 'Override lead cost per platform in the advanced controls below.'
-    : 'Using model defaults. Toggle to override per-platform CPL.';
+  const autoEnabled = !manualCpl;
+
+  const metrics = [
+    {
+      key: 'budget',
+      label: 'Budget',
+      value: budget,
+      formatter: (value: number) => formatCurrency(value, currency),
+      dotClass: 'bg-brand/80',
+    },
+    {
+      key: 'reach',
+      label: 'Reach',
+      value: reach,
+      formatter: (value: number) => formatNumber(value),
+      dotClass: 'bg-emerald-400/80',
+    },
+    {
+      key: 'cpl',
+      label: 'Efficiency (CPL)',
+      value: cpl,
+      formatter: (value: number) => formatCurrency(value, currency),
+      dotClass: 'bg-cyan-300/80',
+    },
+    {
+      key: 'roas',
+      label: 'Confidence (ROAS)',
+      value: roas,
+      formatter: (value: number) => `${value.toFixed(2)}x`,
+      dotClass: 'bg-violet-300/80',
+    },
+  ];
+
+  const helperCopy = manualCpl
+    ? 'Manual CPL per platform enabled. Adjust overrides below.'
+    : 'Uses model defaults. Toggle to override per-platform CPL.';
 
   return (
-    <section className="kpi-panel">
-      <div className="planner-tag">KPI summary</div>
-      <div className="kpi-status">
-        <div className="kpi-status__text">
-          <div className="kpi-status__title">{statusTitle}</div>
-          <div className="kpi-status__sub">{statusSub}</div>
-        </div>
-        <label className="switch" title="Enable manual CPL per platform" aria-label="Enable manual CPL per platform">
-          <input
-            type="checkbox"
-            checked={manualCpl}
-            onChange={(event) => onManualCplChange(event.target.checked)}
-          />
-          <span className="slider" />
-        </label>
-      </div>
-      <div className="kpi-list">
-        <div className="kpi-row">
-          <div className="kpi-label">
-            <span className="kpi-dot kpi-dot--accent" />
-            <span>Budget</span>
+    <Card>
+      <header className="space-y-1">
+        <span className={microTitleClass}>KPI Summary</span>
+      </header>
+      <div className="space-y-2 rounded-xl bg-surface-3/70 p-3 ring-1 ring-white/10 md:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-white/80">Auto CPL</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoEnabled}
+              onClick={() => onManualCplChange(!manualCpl)}
+              className={cn(
+                'relative h-8 w-14 rounded-full transition-colors duration-200 ring-1 ring-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+                autoEnabled ? 'bg-brand/40 ring-brand/30' : 'bg-surface-2'
+              )}
+            >
+              <span className="sr-only">Toggle manual CPL per platform</span>
+              <span
+                className={cn(
+                  'absolute left-1 top-1 h-6 w-6 rounded-full bg-white/90 transition-transform duration-200',
+                  autoEnabled ? 'translate-x-6' : 'translate-x-0'
+                )}
+              />
+            </button>
+            <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/50">
+              {autoEnabled ? 'On' : 'Off'}
+            </span>
           </div>
-          <AnimatedCounter
-            value={budget}
-            formatter={(value) => formatCurrency(value, currency)}
-            className="kpi-value"
-          />
-        </div>
-        <div className="kpi-row">
-          <div className="kpi-label">
-            <span className="kpi-dot kpi-dot--reach" />
-            <span>Reach</span>
-          </div>
-          <AnimatedCounter
-            value={reach}
-            formatter={(value) => formatNumber(value)}
-            className="kpi-value"
-          />
-        </div>
-        <div className="kpi-row">
-          <div className="kpi-label">
-            <span className="kpi-dot kpi-dot--efficiency" />
-            <span>Efficiency (CPL)</span>
-          </div>
-          <AnimatedCounter
-            value={cpl}
-            formatter={(value) => formatCurrency(value, currency)}
-            className="kpi-value"
-          />
-        </div>
-        <div className="kpi-row">
-          <div className="kpi-label">
-            <span className="kpi-dot kpi-dot--confidence" />
-            <span>Confidence (ROAS)</span>
-          </div>
-          <AnimatedCounter
-            value={roas}
-            formatter={(value) => `${value.toFixed(2)}x`}
-            className="kpi-value"
-          />
+          <p className="text-[12px] text-white/60 sm:text-right">{helperCopy}</p>
         </div>
       </div>
-    </section>
+
+      <div className="space-y-2">
+        {metrics.map((metric) => (
+          <div
+            key={metric.key}
+            className="flex h-9 items-center justify-between rounded-full bg-surface-3/70 px-3 text-xs font-medium text-white/70 ring-1 ring-white/10"
+          >
+            <div className="flex items-center gap-2">
+              <span className={cn('h-2 w-2 rounded-full', metric.dotClass)} aria-hidden="true" />
+              <span>{metric.label}</span>
+            </div>
+            <AnimatedCounter
+              value={metric.value}
+              formatter={metric.formatter as (value: number) => string}
+              className="text-sm font-semibold text-white/90"
+            />
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
