@@ -556,10 +556,32 @@ body.planner-in .appBg::after{opacity:.18}
 
 .kpi-panel .planner-tag{margin-bottom:14px;color:rgba(255,255,255,0.5)}
 
+.kpi-status{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:18px 20px;
+  border-radius:22px;
+  background:rgba(255,255,255,0.035);
+  border:1px solid rgba(255,255,255,0.05);
+  backdrop-filter:blur(10px);
+}
+
+.kpi-status__text{display:flex;flex-direction:column;gap:6px;color:rgba(231,236,243,0.82)}
+.kpi-status__title{font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f1f5ff}
+.kpi-status__sub{font-size:12px;color:rgba(231,236,243,0.68);letter-spacing:.02em;line-height:1.4}
+.kpi-status .switch{flex-shrink:0}
+
 .kpi-list{
   display:flex;
   flex-direction:column;
   gap:14px;
+}
+
+@media (max-width:640px){
+  .kpi-status{flex-direction:column;align-items:flex-start;gap:12px}
+  .kpi-status .switch{align-self:flex-end}
 }
 
 .kpi-row{

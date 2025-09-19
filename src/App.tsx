@@ -1,6 +1,6 @@
 import './styles/theme.css'
 import './styles/charts.css'
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type Dispatch, type SetStateAction } from 'react';
 import { motion, useInView, useReducedMotion, cubicBezier } from 'framer-motion';
 import type { Platform, Goal, Market, Currency } from './lib/assumptions';
 import { NICHE_DEFAULTS } from './lib/assumptions';
@@ -436,8 +436,12 @@ function App() {
         >
           <motion.div className="planner-grid" variants={gridVariants}>
             <motion.div className="planner-copy" variants={itemVariants}>
-              <span className="planner-tag">Live preview</span>
-              <h2 className="planner-heading">Plan a sample campaign</h2>
+              <KpiCards
+                totals={totals}
+                currency={currency}
+                manualCpl={manualCPL}
+                onManualCplChange={setManualCPL}
+              />
             </motion.div>
             <motion.div className="planner-card-wrap" variants={itemVariants}>
               <MediaPlannerCard
@@ -476,9 +480,6 @@ function App() {
 
         <section id="results-section" className="section">
           <div className="container flex flex-col gap-8">
-            {results.length > 0 && (
-              <KpiCards totals={totals} currency={currency} />
-            )}
             <div className="grid gap-6 lg:grid-cols-2">
               <BudgetDonutPro
                 data={donutData}
@@ -562,15 +563,43 @@ function App() {
 
 
 // KPI Cards Component
-function KpiCards({ totals, currency }: { totals: any; currency: string }) {
+function KpiCards({
+  totals,
+  currency,
+  manualCpl,
+  onManualCplChange,
+}: {
+  totals: any;
+  currency: string;
+  manualCpl: boolean;
+  onManualCplChange: Dispatch<SetStateAction<boolean>> | ((value: boolean) => void);
+}) {
   const budget = typeof totals?.budget === 'number' ? totals.budget : null;
   const reach = typeof totals?.reach === 'number' ? totals.reach : null;
   const cpl = typeof totals?.cpl === 'number' ? totals.cpl : null;
   const roas = typeof totals?.roas === 'number' ? totals.roas : null;
+  const statusTitle = manualCpl ? 'Manual CPL per platform' : 'Auto CPL is ON';
+  const statusSub = manualCpl
+    ? 'Override lead cost per platform in the advanced controls below.'
+    : 'Using model defaults. Toggle to override per-platform CPL.';
 
   return (
     <section className="kpi-panel">
       <div className="planner-tag">KPI summary</div>
+      <div className="kpi-status">
+        <div className="kpi-status__text">
+          <div className="kpi-status__title">{statusTitle}</div>
+          <div className="kpi-status__sub">{statusSub}</div>
+        </div>
+        <label className="switch" title="Enable manual CPL per platform" aria-label="Enable manual CPL per platform">
+          <input
+            type="checkbox"
+            checked={manualCpl}
+            onChange={(event) => onManualCplChange(event.target.checked)}
+          />
+          <span className="slider" />
+        </label>
+      </div>
       <div className="kpi-list">
         <div className="kpi-row">
           <div className="kpi-label">

@@ -48,8 +48,8 @@ export function CostOverridesCard({
       ) : (
         <div className="rowCard">
           <div>
-            <div className="title">Auto CPL is ON</div>
-            <div className="sub">Turn on manual CPL to override per-platform cost of lead.</div>
+            <div className="title">Auto CPL is active</div>
+            <div className="sub">Use the KPI summary toggle above to enable manual overrides when you need them.</div>
           </div>
         </div>
       )}
