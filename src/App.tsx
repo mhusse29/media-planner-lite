@@ -10,7 +10,7 @@ import { generateRecommendations } from './lib/recommendations';
 import type { ExportPayload } from './export';
 import type { AppState } from './lib/storage';
 import { saveState, loadState } from './lib/storage';
-import { Download, Settings } from 'lucide-react';
+import { Download, Settings, Sparkles, Target, Globe2 } from 'lucide-react';
 import { PLATFORM_LABELS, formatNumber, formatCurrency, cn } from './lib/utils';
 import { BudgetDonutPro, ImpressionsBarsPro } from './components/ChartsPro';
 import ResultsByPlatformCard from './components/ResultsByPlatformCard';
@@ -32,6 +32,11 @@ const ALL_PLATFORMS: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'GOOGLE_SEARCH', 'GO
 const PLATFORM_NAME_MAP: Record<string, string> = Object.fromEntries(
   ALL_PLATFORMS.map((platform) => [platform, PLATFORM_LABELS[platform] || platform])
 );
+const GOAL_LABELS: Record<Goal, string> = {
+  LEADS: 'Leads',
+  TRAFFIC: 'Traffic',
+  AWARENESS: 'Awareness',
+};
 
 const sanitizeFilename = (name: string) => {
   const cleaned = name.trim().replace(/[\\/:*?"<>|]/g, '-');
@@ -351,6 +356,15 @@ function App() {
       : `Manual split (normalized from ${Math.round(manualSum)}%)`)
     : 'Auto split';
 
+  const goalLabel = GOAL_LABELS[goal] ?? goal;
+  const heroBudgetValue = Number.isFinite(totals.budget) && (totals.budget ?? 0) > 0 ? totals.budget : totalBudget;
+  const selectedPlatformLabels = selectedPlatforms.map((platform) => PLATFORM_LABELS[platform] || platform);
+  const heroFeatures = [
+    { icon: Sparkles, text: 'Guided channel splits tuned to your goal' },
+    { icon: Target, text: 'Instant visibility into reach, clicks & leads' },
+    { icon: Globe2, text: 'Multi-market planning with FX safeguards' },
+  ];
+
 
   const barsData = results.map(r => ({
     name: PLATFORM_LABELS[r.platform] || r.platform,
@@ -362,70 +376,130 @@ function App() {
     <div className="min-h-screen appBg">
       {/* Header */}
       <header className="appbar">
-        <div className="container py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="h1">Media Plan Lite</h1>
-            <div className="flex items-center gap-2">
+        <div className="container navWrap">
+          <div className="brand">
+            <span className="brandMark">MPL</span>
+            <div className="brandCopy">
+              <p className="brandName">Media Plan Lite</p>
+              <p className="brandSub">Modern media planning workspace</p>
+            </div>
+          </div>
+          <div className="navActions">
+            <button
+              onClick={() => setShowFx(true)}
+              className="btn btn-ghost"
+              title="Review or update exchange rates"
+            >
+              <Settings size={16} />
+              <span>Manage FX</span>
+            </button>
+            <div className="exportWrap">
               <button
-                onClick={() => setShowFx(true)}
-                className="btn"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                title="Review or update exchange rates"
+                onClick={()=> setExportOpen(v=>!v)}
+                disabled={results.length === 0 || isExporting}
+                className="btn btn-primary"
+                aria-haspopup="menu"
+                aria-expanded={exportOpen}
+                aria-busy={isExporting}
               >
-                <Settings size={14} />
-                <span>Manage FX</span>
+                <Download size={16} />
+                {isExporting ? 'Exporting…' : 'Export'}
               </button>
-              <div style={{ position:'relative' }}>
-                <button
-                  onClick={()=> setExportOpen(v=>!v)}
-                  disabled={results.length === 0 || isExporting}
-                  className="btn primary"
-                  aria-haspopup="menu"
-                  aria-expanded={exportOpen}
-                  aria-busy={isExporting}
-                >
-                  <Download size={14} />
-                  {isExporting ? 'Exporting…' : 'Export'}
-                </button>
-                {exportOpen && (
-                  <div role="dialog" aria-modal="true" style={{ position:'absolute', right:0, marginTop:8, background:'#16171A', border:'1px solid var(--border)', borderRadius:12, padding:12, minWidth:260, zIndex:30 }}>
-                    <div style={{ display:'grid', gap:8 }}>
-                      <div>
-                        <div className="label">Filename</div>
-                        <input className="input" value={exportName} onChange={e=>setExportName(e.target.value)} />
-                      </div>
-                      <div>
-                        <div className="label">Paper (PDF)</div>
-                        <select className="select" value={exportPaper} onChange={e=>setExportPaper(e.target.value as any)}>
-                          <option value="a4">A4</option>
-                          <option value="letter">Letter</option>
-                        </select>
-                      </div>
-                      <label className="chip" style={{ justifyContent:'space-between' }}>
-                        Include assumptions (XLSX)
-                        <input type="checkbox" checked={includeAssumptions} onChange={e=>setIncludeAssumptions(e.target.checked)} />
-                      </label>
-                      <div style={{ display:'grid', gap:6 }}>
-                        <button className="secBtn" onClick={()=>runExport('pdf')} disabled={isExporting}>
-                          {isExporting ? 'Exporting…' : 'Export PDF'}
-                        </button>
-                        <button className="secBtn" onClick={()=>runExport('xlsx')} disabled={isExporting}>
-                          {isExporting ? 'Exporting…' : 'Export XLSX'}
-                        </button>
-                        <button className="secBtn" onClick={()=>runExport('csv')} disabled={isExporting}>
-                          {isExporting ? 'Exporting…' : 'Export CSV'}
-                        </button>
-                      </div>
-                    </div>
+              {exportOpen && (
+                <div className="exportMenu" role="dialog" aria-modal="true">
+                  <div className="exportMenu__group">
+                    <label className="exportMenu__label">
+                      <span>Filename</span>
+                      <input className="exportMenu__input" value={exportName} onChange={e=>setExportName(e.target.value)} />
+                    </label>
+                    <label className="exportMenu__label">
+                      <span>Paper (PDF)</span>
+                      <select className="exportMenu__input" value={exportPaper} onChange={e=>setExportPaper(e.target.value as any)}>
+                        <option value="a4">A4</option>
+                        <option value="letter">Letter</option>
+                      </select>
+                    </label>
+                    <label className="exportMenu__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={includeAssumptions}
+                        onChange={e=>setIncludeAssumptions(e.target.checked)}
+                      />
+                      <span>Include assumptions (XLSX)</span>
+                    </label>
                   </div>
-                )}
-              </div>
+                  <div className="exportMenu__actions">
+                    <button className="secBtn" onClick={()=>runExport('pdf')} disabled={isExporting}>
+                      {isExporting ? 'Exporting…' : 'Export PDF'}
+                    </button>
+                    <button className="secBtn" onClick={()=>runExport('xlsx')} disabled={isExporting}>
+                      {isExporting ? 'Exporting…' : 'Export XLSX'}
+                    </button>
+                    <button className="secBtn" onClick={()=>runExport('csv')} disabled={isExporting}>
+                      {isExporting ? 'Exporting…' : 'Export CSV'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
       <main className="pb-24">
+        <section className="hero">
+          <div className="container hero-grid">
+            <div className="hero-copy">
+              <span className="hero-badge">Media planning workspace</span>
+              <h1 className="hero-title">Design full-funnel media plans in minutes.</h1>
+              <p className="hero-sub">Set your assumptions, guide the mix, and export polished reports without leaving the dashboard.</p>
+              <ul className="hero-list">
+                {heroFeatures.map(({ icon: Icon, text }) => (
+                  <li key={text}>
+                    <Icon size={16} aria-hidden="true" />
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="hero-meta">
+                <span className="hero-chip">Market: {market}</span>
+                <span className="hero-chip">Goal: {goalLabel}</span>
+                <span className="hero-chip">Niche: {niche}</span>
+              </div>
+            </div>
+            <div className="hero-highlight">
+              <span className="hero-highlight__badge">Live plan snapshot</span>
+              <div className="hero-highlight__metric">
+                <span className="hero-highlight__label">Active budget</span>
+                <AnimatedCounter
+                  value={Number.isFinite(heroBudgetValue) ? heroBudgetValue : 0}
+                  formatter={(value) => formatCurrency(value, currency)}
+                  className="hero-highlight__value"
+                />
+              </div>
+              <div className="hero-highlight__row">
+                <span className="hero-highlight__label">Channels in play</span>
+                <div className="hero-platforms">
+                  {selectedPlatformLabels.length > 0 ? (
+                    selectedPlatformLabels.map((name) => (
+                      <span key={name} className="hero-platforms__chip">{name}</span>
+                    ))
+                  ) : (
+                    <span className="hero-platforms__chip muted">No platforms selected</span>
+                  )}
+                </div>
+              </div>
+              <div className="hero-highlight__row">
+                <span className="hero-highlight__label">Lead → sale</span>
+                <p className="hero-highlight__text">{leadToSalePercent}% close rate</p>
+              </div>
+              <div className="hero-highlight__row">
+                <span className="hero-highlight__label">Revenue per sale</span>
+                <p className="hero-highlight__text">{formatCurrency(revenuePerSale, currency)}</p>
+              </div>
+            </div>
+          </div>
+        </section>
         <motion.section
           ref={plannerRef}
           className="planner-shell"
