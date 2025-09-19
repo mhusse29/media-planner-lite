@@ -17,6 +17,15 @@ export default {
         inputBg: '#2C2C2C',
         border: '#333333',
         divider: '#2b2b2b',
+        surface: {
+          1: 'rgba(10, 16, 29, 0.78)',
+          2: 'rgba(12, 18, 28, 0.92)',
+          3: 'rgba(22, 30, 45, 0.78)',
+        },
+        brand: {
+          DEFAULT: '#6B70FF',
+          100: '#E0E4FF',
+        },
         'platform-facebook': '#1877F2',
         'platform-instagram': '#E1306C',
         'platform-google-search': '#4285F4',
@@ -32,6 +41,7 @@ export default {
       boxShadow: {
         'elev': '0 12px 36px rgba(0, 0, 0, .40)',
         'focus': '0 0 0 3px rgba(103, 58, 183, 0.25)',
+        'soft': '0 24px 60px rgba(3, 7, 18, 0.45)',
       },
       fontSize: {
         'xs': ['12px', '16px'],
