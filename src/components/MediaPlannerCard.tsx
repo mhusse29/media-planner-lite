@@ -4,12 +4,11 @@ import type { Goal, Market, Currency } from '../lib/assumptions';
 import { Card, microTitleClass } from './ui/Card';
 import { Tooltip } from './ui/Tooltip';
 
-const helperPillClass =
-  'inline-flex h-8 items-center rounded-full bg-surface-3/70 px-3 text-xs font-medium text-white/70 ring-1 ring-white/10';
-const fieldLabelClass = 'text-xs font-semibold uppercase tracking-[0.12em] text-white/60';
-const inputClass =
-  'h-10 w-full rounded-xl bg-surface-3/70 px-3 text-sm text-white/80 ring-1 ring-white/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
-const hintClass = 'text-xs text-white/50';
+const helperPillClass = 'media-card__pill';
+const objectiveButtonClass = 'media-card__objective';
+const fieldLabelClass = 'media-card__label';
+const inputClass = 'media-card__input';
+const hintClass = 'media-card__hint';
 
 const OBJECTIVES: { value: Goal; label: string }[] = [
   { value: 'LEADS', label: 'Leads' },
@@ -201,7 +200,7 @@ export default function MediaPlannerCard({
               <button
                 key={objective.value}
                 type="button"
-                className={`${helperPillClass} ${active ? 'bg-brand/10 text-brand-100 ring-brand/30' : ''}`}
+                className={objectiveButtonClass}
                 aria-pressed={active}
                 onClick={() => onGoalChange(objective.value)}
               >

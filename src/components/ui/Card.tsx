@@ -13,7 +13,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     <section
       ref={ref}
       className={cn(
-        'isolate space-y-3 rounded-2xl bg-surface-2 p-4 md:p-5 ring-1 ring-white/10 shadow-soft',
+        'planner-card space-y-3',
         className
       )}
       {...props}
