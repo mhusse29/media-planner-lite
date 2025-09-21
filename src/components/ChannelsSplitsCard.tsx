@@ -5,7 +5,7 @@ import type { Currency, Platform } from '../lib/assumptions';
 import { PLATFORM_LABELS, cn } from '../lib/utils';
 import { Tooltip } from './ui/Tooltip';
 import { PlatformGlyph } from './PlatformGlyph';
-import { Card, microTitleClass } from './ui/Card';
+import { Card } from './ui/Card';
 
 const PLATFORM_SUMMARY_CODES: Record<Platform, string> = {
   FACEBOOK: 'FB',
@@ -335,36 +335,26 @@ export function ChannelsSplitsCard({
     mode === 'auto' ? 'Auto allocates by model CPL.' : 'Adjust % per channel.';
   const openManual = mode === 'manual' && selectedCount > 0;
 
-  const pillButtonClass =
-    'inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-medium text-white/70 ring-1 ring-white/10 transition-colors duration-200 hover:ring-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-40 disabled:cursor-not-allowed';
-
   return (
-    <Card aria-labelledby={`${titleId}-title`}>
-      <header className="space-y-1">
-        <span id={`${titleId}-title`} className={microTitleClass}>
+    <Card aria-labelledby={`${titleId}-title`} className="channels-card">
+      <header className="channels-card__head">
+        <span id={`${titleId}-title`} className="channels-card__title">
           Channels &amp; Splits
         </span>
-        <p className="text-[13px] text-white/70">
-          Pick channels and (optional) edit manual splits.
-        </p>
+        <p className="channels-card__sub">Pick channels and (optional) edit manual splits.</p>
       </header>
 
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50">
-            Channels
-          </span>
-          <div className="flex flex-wrap gap-2 md:gap-3" role="group" aria-label="Select channels">
+      <div className="channels-card__body">
+        <div className="channels-row">
+          <span className="channels-row__label">Channels</span>
+          <div className="channels-pill-grid" role="group" aria-label="Select channels">
             {platforms.map((platform) => {
               const active = selectedPlatforms.includes(platform);
               return (
                 <Tooltip key={platform} content={PLATFORM_LABELS[platform] || platform}>
                   <button
                     type="button"
-                    className={cn(
-                      'flex h-9 w-9 items-center justify-center rounded-full bg-surface-3 text-white/70 ring-1 ring-white/10 transition-colors duration-200 hover:ring-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
-                      active && 'bg-brand/10 text-brand-100 ring-brand/30'
-                    )}
+                    className={cn('channel-pill', active && 'is-active')}
                     aria-pressed={active}
                     aria-label={PLATFORM_LABELS[platform] || platform}
                     onClick={() => onPlatformToggle(platform)}
@@ -377,76 +367,49 @@ export function ChannelsSplitsCard({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50">
-            Mode
-          </span>
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <div className="inline-flex h-9 items-center rounded-full bg-surface-3/70 p-1 ring-1 ring-white/10">
-                <button
-                  type="button"
-                  className={cn(
-                    'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium text-white/70 transition-colors duration-200',
-                    mode === 'auto' && 'bg-brand/10 text-brand-100 shadow-[0_0_0_1px_rgba(107,112,255,0.24)]'
-                  )}
-                  onClick={() => handleModeChange('auto')}
-                >
-                  Auto
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    'inline-flex h-7 items-center rounded-full px-3 text-xs font-medium text-white/70 transition-colors duration-200',
-                    mode === 'manual' && 'bg-brand/10 text-brand-100 shadow-[0_0_0_1px_rgba(107,112,255,0.24)]',
-                    disabledManual && 'opacity-40'
-                  )}
-                  onClick={() => handleModeChange('manual')}
-                  disabled={disabledManual}
-                >
-                  Manual
-                </button>
-              </div>
-              <p className="text-[12px] text-white/60">{helperText}</p>
+        <div className="channels-row channels-row--mode">
+          <span className="channels-row__label">Mode</span>
+          <div className="channels-mode">
+            <div className="channels-seg">
+              <button
+                type="button"
+                className={cn(mode === 'auto' && 'is-active')}
+                onClick={() => handleModeChange('auto')}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                className={cn(mode === 'manual' && 'is-active')}
+                onClick={() => handleModeChange('manual')}
+                disabled={disabledManual}
+              >
+                Manual
+              </button>
             </div>
-            {disabledManual && (
-              <p className="text-[12px] text-amber-300">Select at least one channel.</p>
-            )}
+            <p className="channels-helper">{helperText}</p>
+            {disabledManual && <p className="channels-hint">Select at least one channel.</p>}
           </div>
         </div>
 
         {openManual && (
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                ref={triggerRef}
-                type="button"
-                className={cn(
-                  pillButtonClass,
-                  'items-center',
-                  drawerOpen && 'bg-brand/10 text-brand-100 ring-brand/30'
-                )}
-                onClick={toggleDrawer}
-                aria-expanded={drawerOpen}
-                aria-controls={drawerId}
-              >
-                Splits
-                <ChevronDown
-                  className={cn(
-                    'h-4 w-4 transition-transform duration-200',
-                    drawerOpen && '-rotate-180'
-                  )}
-                />
-              </button>
-              {!drawerOpen && summaryLabel && (
-                <span
-                  className="inline-flex h-8 items-center rounded-full bg-surface-3/70 px-3 text-xs text-white/70 ring-1 ring-white/10"
-                  aria-live="polite"
-                >
-                  {summaryLabel}
-                </span>
-              )}
-            </div>
+          <div className="channels-row channels-row--splits">
+            <button
+              ref={triggerRef}
+              type="button"
+              className={cn('channels-split-trigger', drawerOpen && 'is-open')}
+              onClick={toggleDrawer}
+              aria-expanded={drawerOpen}
+              aria-controls={drawerId}
+            >
+              Splits
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            {!drawerOpen && summaryLabel && (
+              <span className="channels-summary" aria-live="polite">
+                {summaryLabel}
+              </span>
+            )}
           </div>
         )}
 
@@ -456,149 +419,113 @@ export function ChannelsSplitsCard({
               ref={drawerRef}
               key="splits-drawer"
               id={drawerId}
-              className="overflow-hidden rounded-2xl border border-white/10 bg-surface-3/70 p-4"
+              className="channels-drawer"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div className="space-y-4">
-                <div className="grid gap-3">
-                  {selectedPlatforms.map((platform) => {
-                    const value = Math.max(0, platformWeights[platform] ?? 0);
-                    const cplValue = platformCPLs[platform];
-                    return (
-                      <div
-                        key={platform}
-                        className="grid gap-3 rounded-2xl bg-surface-2/60 p-3 ring-1 ring-white/5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_90px_150px]"
-                      >
-                        <div className="flex items-center gap-2 text-sm font-medium text-white/80">
-                          <PlatformGlyph platform={platform} />
-                          <span>{PLATFORM_LABELS[platform] || platform}</span>
-                        </div>
-                        <div className="flex items-center">
+              <div className="channels-drawer__grid">
+                {selectedPlatforms.map((platform) => {
+                  const value = Math.max(0, platformWeights[platform] ?? 0);
+                  const cplValue = platformCPLs[platform];
+                  return (
+                    <div key={platform} className="channels-slider-row">
+                      <div className="channels-slider__label">
+                        <PlatformGlyph platform={platform} />
+                        <span>{PLATFORM_LABELS[platform] || platform}</span>
+                      </div>
+                      <div className="channels-slider__controls">
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={value}
+                          onChange={(event) => updateValue(platform, Number(event.target.value))}
+                          aria-label={`${PLATFORM_LABELS[platform] || platform} split`}
+                        />
+                        <div className="channels-slider__input">
                           <input
-                            type="range"
+                            type="number"
                             min={0}
                             max={100}
                             step={1}
-                            value={value}
-                            onChange={(event) =>
-                              updateValue(platform, Number(event.target.value))
-                            }
-                            aria-label={`${PLATFORM_LABELS[platform] || platform} split`}
-                            className="h-1.5 w-full accent-brand"
+                            value={Number.isFinite(value) ? value : 0}
+                            onChange={(event) => updateValue(platform, Number(event.target.value))}
+                            aria-label={`${PLATFORM_LABELS[platform] || platform} percent`}
                           />
-                        </div>
-                        <div className="flex items-center">
-                          <div className="flex h-9 w-full items-center justify-between rounded-xl bg-surface-2/80 px-3 text-sm text-white/80 ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand/40">
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={Number.isFinite(value) ? value : 0}
-                              onChange={(event) =>
-                                updateValue(platform, Number(event.target.value))
-                              }
-                              aria-label={`${PLATFORM_LABELS[platform] || platform} percent`}
-                              className="w-full bg-transparent text-right outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            />
-                            <span className="text-xs text-white/50">%</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <div
-                            className={cn(
-                              'flex h-9 w-full items-center gap-2 rounded-xl bg-surface-2/80 px-3 text-sm ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand/40',
-                              manualCpl ? 'text-white/80' : 'text-white/40'
-                            )}
-                          >
-                            <span className="text-xs font-semibold uppercase text-white/50">
-                              {currency}
-                            </span>
-                            <input
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={Number.isFinite(cplValue) ? cplValue : ''}
-                              onChange={(event) =>
-                                updateCpl(platform, event.target.value)
-                              }
-                              placeholder="Auto"
-                              aria-label={`${PLATFORM_LABELS[platform] || platform} CPL override`}
-                              className="w-full bg-transparent text-right outline-none placeholder:text-white/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:text-white/40"
-                              disabled={!manualCpl}
-                            />
-                          </div>
+                          <span>%</span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {!manualCpl && (
-                  <p className="text-[12px] text-white/50">
-                    CPL overrides follow model defaults until Manual CPL is enabled.
-                  </p>
-                )}
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <div
-                    className={cn(
-                      'flex w-full flex-col gap-2 text-xs text-white/70 sm:w-auto',
-                      sum !== 100 && 'text-amber-300'
-                    )}
-                  >
-                    <span className="font-semibold">Sum: {sum}%</span>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10 sm:w-40">
                       <div
                         className={cn(
-                          'h-full rounded-full bg-brand',
-                          sum !== 100 && 'bg-amber-300'
+                          'channels-slider__input channels-slider__input--currency',
+                          manualCpl ? 'is-active' : 'is-disabled'
                         )}
-                        style={{ width: `${Math.max(0, Math.min(100, sum))}%` }}
-                      />
+                      >
+                        <span>{currency}</span>
+                        {manualCpl ? (
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={Number.isFinite(cplValue) ? cplValue : ''}
+                            onChange={(event) => updateCpl(platform, event.target.value)}
+                            placeholder="Auto"
+                            aria-label={`${PLATFORM_LABELS[platform] || platform} CPL override`}
+                          />
+                        ) : (
+                          <span className="channels-slider__auto">Auto</span>
+                        )}
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              {!manualCpl && (
+                <p className="channels-helper">
+                  CPL overrides follow model defaults until Manual CPL is enabled.
+                </p>
+              )}
+
+              <div className="channels-drawer__footer">
+                <div className={cn('channels-sum', sum !== 100 && 'is-warn')}>
+                  <span>Sum: {sum}%</span>
+                  <div className="channels-sum__bar">
+                    <div
+                      className="channels-sum__fill"
+                      style={{ width: `${Math.max(0, Math.min(100, sum))}%` }}
+                    />
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                    <button type="button" className={pillButtonClass} onClick={equalize} disabled={!selectedCount}>
-                      Equal split
-                    </button>
-                    <button type="button" className={pillButtonClass} onClick={normalize} disabled={!selectedCount}>
-                      Normalize
-                    </button>
-                    <button type="button" className={pillButtonClass} onClick={clear} disabled={!selectedCount}>
-                      Clear
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className={cn(
-                      pillButtonClass,
-                      enforceMinEach && 'bg-brand/10 text-brand-100 ring-brand/30'
-                    )}
-                    onClick={() => onEnforceMinEachChange(!enforceMinEach)}
-                    aria-pressed={enforceMinEach}
-                  >
-                    <span className="relative flex h-3 w-3 items-center justify-center">
-                      <span
-                        className={cn(
-                          'h-2 w-2 rounded-full bg-brand transition-opacity',
-                          enforceMinEach ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
-                    </span>
-                    Min 10% each
+                </div>
+                <div className="channels-drawer__actions">
+                  <button type="button" onClick={equalize} disabled={!selectedCount}>
+                    Equal split
+                  </button>
+                  <button type="button" onClick={normalize} disabled={!selectedCount}>
+                    Normalize
+                  </button>
+                  <button type="button" onClick={clear} disabled={!selectedCount}>
+                    Clear
                   </button>
                 </div>
-
-                {minViolation && (
-                  <p className="text-[12px] text-rose-300" role="alert">
-                    Raise each channel to at least 10% when Min 10% each is on.
-                  </p>
-                )}
+                <label className="channels-min-toggle">
+                  <input
+                    type="checkbox"
+                    checked={enforceMinEach}
+                    onChange={(event) => onEnforceMinEachChange(event.target.checked)}
+                  />
+                  Min 10% each
+                </label>
               </div>
+
+              {minViolation && (
+                <p className="channels-error" role="alert">
+                  Raise each channel to at least 10% when Min 10% each is on.
+                </p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

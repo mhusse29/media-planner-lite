@@ -18,9 +18,9 @@ export default {
         border: '#333333',
         divider: '#2b2b2b',
         surface: {
-          1: 'rgba(10, 16, 29, 0.78)',
-          2: 'rgba(12, 18, 28, 0.92)',
-          3: 'rgba(22, 30, 45, 0.78)',
+          1: '#0A101DC7',
+          2: '#0C121CEB',
+          3: '#161E2DC7',
         },
         brand: {
           DEFAULT: '#6B70FF',
